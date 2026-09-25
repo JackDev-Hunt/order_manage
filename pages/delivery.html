@@ -1,0 +1,1942 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <meta name="theme-color" content="#2563eb" />
+  <title>Delivery — Order Management</title>
+
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            brand: { 50:"#eff6ff",100:"#dbeafe",200:"#bfdbfe",500:"#3b82f6",600:"#2563eb",700:"#1d4ed8",900:"#1e3a8a" }
+          },
+          fontFamily: { sans: ["Inter","system-ui","sans-serif"] },
+          transitionDuration: { "250": "250ms" }
+        }
+      }
+    };
+  </script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../assets/css/style.css" />
+
+  <style>
+    .modal-backdrop {
+      position: fixed; inset: 0; z-index: 100;
+      background: rgba(15, 23, 42, 0.55);
+      backdrop-filter: blur(2px); -webkit-backdrop-filter: blur(2px);
+      display: none; align-items: flex-end; justify-content: center;
+      animation: modalBackdropFade 0.2s ease-out;
+    }
+    .modal-backdrop.is-open { display: flex; }
+    @media (min-width: 640px) { .modal-backdrop { align-items: center; padding: 1.5rem; } }
+    .modal-panel {
+      width: 100%; max-width: 100%; background: #fff;
+      border-radius: 20px 20px 0 0; max-height: 92vh;
+      overflow: hidden; display: flex; flex-direction: column;
+      box-shadow: 0 -10px 30px rgba(15, 23, 42, 0.15);
+      animation: modalSlideUp 0.28s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    @media (min-width: 640px) {
+      .modal-panel {
+        max-width: 640px; border-radius: 16px;
+        box-shadow: 0 20px 60px rgba(15, 23, 42, 0.25);
+        animation: modalFadeScale 0.22s cubic-bezier(0.16, 1, 0.3, 1);
+      }
+    }
+    @keyframes modalSlideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
+    @keyframes modalFadeScale { from { opacity: 0; transform: scale(0.96); } to { opacity: 1; transform: scale(1); } }
+    @keyframes modalBackdropFade { from { opacity: 0; } to { opacity: 1; } }
+    .modal-grab { width: 40px; height: 4px; border-radius: 9999px; background: #cbd5e1; margin: 8px auto 0; }
+    @media (min-width: 640px) { .modal-grab { display: none; } }
+
+    /* Tabs */
+    .tab-btn {
+      padding: 8px 16px;
+      font-size: 14px;
+      font-weight: 500;
+      color: #64748b;
+      border-bottom: 2px solid transparent;
+      transition: all 0.15s;
+      white-space: nowrap;
+    }
+    .tab-btn:hover { color: #334155; }
+    .tab-btn.active {
+      color: #2563eb;
+      border-bottom-color: #2563eb;
+    }
+  </style>
+</head>
+
+<body class="bg-slate-50 min-h-screen">
+
+  <!-- Sidebar overlay -->
+  <div id="sidebar-overlay"
+       class="fixed inset-0 z-40 bg-slate-900/60 backdrop-blur-sm
+              opacity-0 pointer-events-none transition-opacity duration-[250ms] lg:hidden"
+       aria-hidden="true"></div>
+
+  <!-- Sidebar -->
+  <aside id="app-sidebar"
+         class="sidebar-drawer fixed top-0 left-0 bottom-0 z-50 w-64 bg-white border-r border-slate-200 flex flex-col"
+         aria-label="Main navigation">
+
+    <div class="flex items-center justify-between h-14 px-4 border-b border-slate-200 lg:hidden">
+      <a href="dashboard.html" class="flex items-center gap-2">
+        <span class="inline-flex items-center justify-center w-9 h-9 rounded-lg bg-brand-600 text-white">
+          <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" /></svg>
+        </span>
+        <span class="text-base font-semibold text-slate-900">Order<span class="text-brand-600">Mng</span></span>
+      </a>
+      <button type="button" id="sidebar-close"
+              class="inline-flex items-center justify-center w-10 h-10 rounded-lg text-slate-600 hover:bg-slate-100"
+              aria-label="Close menu">
+        <svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" /></svg>
+      </button>
+    </div>
+
+    <div class="hidden lg:flex items-center gap-2.5 h-16 px-4 border-b border-slate-200">
+      <span class="inline-flex items-center justify-center w-9 h-9 rounded-lg bg-brand-600 text-white">
+        <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" /></svg>
+      </span>
+      <div>
+        <p class="text-base font-semibold text-slate-900 leading-tight">Order<span class="text-brand-600">Mng</span></p>
+        <p class="text-[11px] text-slate-500 leading-tight">Business Suite</p>
+      </div>
+    </div>
+
+    <nav class="flex-1 overflow-y-auto py-3 px-2" aria-label="Primary">
+      <p class="px-3 pt-2 pb-1.5 text-[10px] font-semibold uppercase tracking-wider text-slate-400">Overview</p>
+      <ul class="space-y-0.5">
+        <li><a href="dashboard.html" class="nav-link relative flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-slate-700 hover:bg-slate-100">
+          <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" /></svg>
+          <span>Dashboard</span></a></li>
+        <li><a href="orders.html" class="nav-link relative flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-slate-700 hover:bg-slate-100">
+          <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" /></svg>
+          <span>Orders</span></a></li>
+      </ul>
+
+      <p class="px-3 pt-5 pb-1.5 text-[10px] font-semibold uppercase tracking-wider text-slate-400">Manage</p>
+      <ul class="space-y-0.5">
+        <li><a href="shops.html" class="nav-link relative flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-slate-700 hover:bg-slate-100">
+          <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M3 9l1.5-5h15L21 9m-1 0v11a1 1 0 01-1 1h-4v-7H9v7H5a1 1 0 01-1-1V9m16 0H3" /></svg>
+          <span>Customers</span></a></li>
+        <li><a href="products.html" class="nav-link relative flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-slate-700 hover:bg-slate-100">
+          <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" /></svg>
+          <span>Products</span></a></li>
+        <li><a href="payments.html" class="nav-link relative flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-slate-700 hover:bg-slate-100">
+          <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" /></svg>
+          <span>Payments</span></a></li>
+        <li><a href="delivery.html" class="nav-link relative flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-slate-700 hover:bg-slate-100">
+          <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M13 16V6a1 1 0 00-1-1H4a1 1 0 00-1 1v10a1 1 0 001 1h1m8-1a1 1 0 01-1 1H9m4-1V8a1 1 0 011-1h2.586a1 1 0 01.707.293l3.414 3.414a1 1 0 01.293.707V16a1 1 0 01-1 1h-1m-6-1a1 1 0 001 1h1M5 17a2 2 0 104 0 2 2 0 00-4 0zm10 0a2 2 0 104 0 2 2 0 00-4 0z" /></svg>
+          <span>Delivery</span></a></li>
+      </ul>
+
+      <p class="px-3 pt-5 pb-1.5 text-[10px] font-semibold uppercase tracking-wider text-slate-400">System</p>
+      <ul class="space-y-0.5">
+        <li><a href="reports.html" class="nav-link relative flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-slate-700 hover:bg-slate-100"><span>Reports</span></a></li>
+        <li><a href="settings.html" class="nav-link relative flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-slate-700 hover:bg-slate-100"><span>Settings</span></a></li>
+      </ul>
+    </nav>
+
+    <div class="border-t border-slate-200 p-2.5">
+      <div class="flex items-center gap-2.5 p-2 rounded-lg">
+        <span class="relative shrink-0">
+          <span id="sidebar-avatar" class="inline-flex items-center justify-center w-9 h-9 rounded-full bg-brand-100 text-brand-700 text-sm font-semibold">A</span>
+          <span class="absolute bottom-0 right-0 w-2.5 h-2.5 rounded-full bg-green-500 ring-2 ring-white"></span>
+        </span>
+        <div class="min-w-0 flex-1">
+          <p id="sidebar-name" class="text-sm font-medium text-slate-900 truncate">Admin</p>
+          <p id="sidebar-role" class="text-xs text-slate-500 truncate">Loading…</p>
+        </div>
+      </div>
+    </div>
+  </aside>
+
+  <!-- Main wrapper -->
+  <div class="lg:pl-64 min-h-screen flex flex-col">
+
+    <!-- Navbar -->
+    <header id="app-navbar" class="sticky top-0 z-30 bg-white border-b border-slate-200">
+      <div class="flex items-center justify-between h-14 sm:h-16 px-3 sm:px-4 lg:px-6 gap-2">
+        <div class="flex items-center gap-2 sm:gap-3 min-w-0 flex-1">
+          <button type="button" id="sidebar-toggle"
+                  class="lg:hidden inline-flex items-center justify-center w-10 h-10 rounded-lg shrink-0 text-slate-600 hover:bg-slate-100"
+                  aria-label="Open menu">
+            <svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M4 6h16M4 12h16M4 18h16" /></svg>
+          </button>
+          <nav class="hidden lg:flex items-center gap-1.5 text-sm">
+            <a href="dashboard.html" class="text-slate-500 hover:text-slate-700">Home</a>
+            <svg xmlns="http://www.w3.org/2000/svg" class="w-3.5 h-3.5 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7" /></svg>
+            <span class="font-medium text-slate-900">Delivery</span>
+          </nav>
+          <h1 class="lg:hidden text-base font-semibold text-slate-900 truncate">Delivery</h1>
+        </div>
+
+        <div class="flex items-center gap-1.5 shrink-0">
+          <div class="relative">
+            <button type="button" id="profile-btn"
+                    class="inline-flex items-center gap-2 pl-1 pr-1.5 sm:pr-2.5 py-1 rounded-lg hover:bg-slate-100">
+              <span class="relative">
+                <span id="profile-avatar" class="inline-flex items-center justify-center w-8 h-8 rounded-full bg-brand-100 text-brand-700 font-semibold text-sm">A</span>
+                <span class="absolute bottom-0 right-0 w-2 h-2 rounded-full bg-green-500 ring-2 ring-white"></span>
+              </span>
+              <span class="hidden sm:flex flex-col items-start leading-tight max-w-[120px]">
+                <span id="profile-name" class="text-sm font-medium text-slate-900 truncate">Admin</span>
+                <span id="profile-role" class="text-[11px] text-slate-500 truncate">Loading…</span>
+              </span>
+            </button>
+            <div id="profile-menu" class="hidden absolute right-0 mt-2 w-60 origin-top-right bg-white rounded-xl border border-slate-200 shadow-lg overflow-hidden">
+              <div class="px-4 py-3 border-b border-slate-100 bg-slate-50/50">
+                <p id="menu-name" class="text-sm font-semibold text-slate-900 truncate">Admin</p>
+                <p id="menu-email" class="text-xs text-slate-500 truncate">—</p>
+              </div>
+              <div class="border-t border-slate-100">
+                <button type="button" id="logout-btn" class="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-red-600 hover:bg-red-50">Logout</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </header>
+
+    <!-- Main -->
+    <main class="flex-1 px-3 sm:px-4 lg:px-6 py-4 sm:py-6">
+
+      <!-- Header -->
+      <div class="mb-4 sm:mb-5 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+        <div>
+          <h2 class="text-xl sm:text-2xl font-bold text-slate-900">Delivery</h2>
+          <p class="text-sm text-slate-500 mt-0.5" id="delivery-count-label">Loading…</p>
+        </div>
+        <div class="flex items-center gap-2">
+          <button type="button" id="refresh-btn"
+                  class="inline-flex items-center justify-center gap-2 px-3 py-2 rounded-lg border border-slate-300
+                         bg-white text-sm font-medium text-slate-700 hover:bg-slate-50
+                         disabled:opacity-60 disabled:cursor-not-allowed">
+            <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+            </svg>
+            <span class="hidden sm:inline">Refresh</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Summary cards -->
+      <section aria-label="Delivery summary"
+               class="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4 mb-4">
+        <div class="bg-white rounded-xl border border-slate-200 p-4">
+          <div class="flex items-start justify-between">
+            <div class="min-w-0">
+              <p class="text-xs font-medium text-slate-500 uppercase tracking-wide">Pending</p>
+              <p class="text-2xl font-bold text-amber-600 mt-1" id="sum-pending">—</p>
+              <p class="text-[11px] text-slate-500 mt-0.5">Not delivered</p>
+            </div>
+            <span class="inline-flex items-center justify-center w-9 h-9 rounded-lg bg-amber-50 text-amber-600 shrink-0">
+              <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+            </span>
+          </div>
+        </div>
+
+        <div class="bg-white rounded-xl border border-slate-200 p-4">
+          <div class="flex items-start justify-between">
+            <div class="min-w-0">
+              <p class="text-xs font-medium text-slate-500 uppercase tracking-wide">Assigned</p>
+              <p class="text-2xl font-bold text-brand-600 mt-1" id="sum-assigned">—</p>
+              <p class="text-[11px] text-slate-500 mt-0.5">With delivery man</p>
+            </div>
+            <span class="inline-flex items-center justify-center w-9 h-9 rounded-lg bg-brand-50 text-brand-600 shrink-0">
+              <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+              </svg>
+            </span>
+          </div>
+        </div>
+
+        <div class="bg-white rounded-xl border border-slate-200 p-4">
+          <div class="flex items-start justify-between">
+            <div class="min-w-0">
+              <p class="text-xs font-medium text-slate-500 uppercase tracking-wide">Delivered Today</p>
+              <p class="text-2xl font-bold text-green-600 mt-1" id="sum-delivered-today">—</p>
+              <p class="text-[11px] text-slate-500 mt-0.5">Completed</p>
+            </div>
+            <span class="inline-flex items-center justify-center w-9 h-9 rounded-lg bg-green-50 text-green-600 shrink-0">
+              <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" />
+              </svg>
+            </span>
+          </div>
+        </div>
+
+        <div class="bg-white rounded-xl border border-slate-200 p-4">
+          <div class="flex items-start justify-between">
+            <div class="min-w-0">
+              <p class="text-xs font-medium text-slate-500 uppercase tracking-wide">Collected Today</p>
+              <p class="text-2xl font-bold text-green-600 mt-1" id="sum-collected-today">—</p>
+              <p class="text-[11px] text-slate-500 mt-0.5">Cash received</p>
+            </div>
+            <span class="inline-flex items-center justify-center w-9 h-9 rounded-lg bg-green-50 text-green-600 shrink-0">
+              <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+            </span>
+          </div>
+        </div>
+      </section>
+
+      <!-- Tabs -->
+      <div class="bg-white rounded-xl border border-slate-200 mb-4 overflow-hidden">
+        <div class="flex border-b border-slate-200 overflow-x-auto">
+          <button type="button" id="tab-pending" class="tab-btn active">
+            Pending Deliveries
+            <span id="tab-pending-count" class="ml-1.5 inline-flex items-center justify-center min-w-[20px] h-5 px-1.5 rounded-full bg-amber-100 text-amber-700 text-[10px] font-semibold">0</span>
+          </button>
+          <button type="button" id="tab-men" class="tab-btn">
+            Delivery Men
+            <span id="tab-men-count" class="ml-1.5 inline-flex items-center justify-center min-w-[20px] h-5 px-1.5 rounded-full bg-slate-100 text-slate-600 text-[10px] font-semibold">0</span>
+          </button>
+        </div>
+
+        <!-- Filter bar -->
+        <div class="p-3 sm:p-4">
+          <div class="grid grid-cols-1 sm:grid-cols-3 gap-2 sm:gap-3">
+            <div class="sm:col-span-2">
+              <label for="search-input" class="sr-only">Search</label>
+              <div class="relative">
+                <span class="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none">
+                  <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-4.35-4.35M17 10.5a6.5 6.5 0 11-13 0 6.5 6.5 0 0113 0z" /></svg>
+                </span>
+                <input type="search" id="search-input" placeholder="Search orders / customers / delivery men…"
+                       class="w-full pl-9 pr-3 py-2.5 sm:py-2 rounded-lg border border-slate-300 text-sm
+                              focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-brand-500" />
+              </div>
+            </div>
+            <div>
+              <label for="status-filter" class="sr-only">Status</label>
+              <select id="status-filter"
+                      class="w-full px-3 py-2.5 sm:py-2 rounded-lg border border-slate-300 text-sm bg-white
+                             focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-brand-500">
+                <option value="">All</option>
+              </select>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ═══════════════════════════════════════════════
+           TAB 1: PENDING DELIVERIES
+           ═══════════════════════════════════════════════ -->
+      <div id="tab-content-pending">
+        <div class="bg-white rounded-xl border border-slate-200 overflow-hidden">
+          <div class="hidden md:block">
+            <div class="overflow-x-auto">
+              <table class="w-full" aria-label="Pending deliveries">
+                <thead>
+                  <tr class="border-b border-slate-200 bg-slate-50">
+                    <th class="text-left text-[11px] font-semibold uppercase tracking-wider text-slate-500 px-4 py-3 whitespace-nowrap">Order</th>
+                    <th class="text-left text-[11px] font-semibold uppercase tracking-wider text-slate-500 px-4 py-3">Customer</th>
+                    <th class="text-right text-[11px] font-semibold uppercase tracking-wider text-slate-500 px-4 py-3">Total</th>
+                    <th class="text-right text-[11px] font-semibold uppercase tracking-wider text-slate-500 px-4 py-3">Paid</th>
+                    <th class="text-right text-[11px] font-semibold uppercase tracking-wider text-slate-500 px-4 py-3">Due</th>
+                    <th class="text-left text-[11px] font-semibold uppercase tracking-wider text-slate-500 px-4 py-3">Delivery Man</th>
+                    <th class="text-center text-[11px] font-semibold uppercase tracking-wider text-slate-500 px-4 py-3">Status</th>
+                    <th class="text-right text-[11px] font-semibold uppercase tracking-wider text-slate-500 px-4 py-3">Actions</th>
+                  </tr>
+                </thead>
+                <tbody id="pending-tbody" class="divide-y divide-slate-100"></tbody>
+              </table>
+            </div>
+          </div>
+
+          <!-- Mobile cards -->
+          <div id="pending-cards" class="md:hidden divide-y divide-slate-100"></div>
+
+          <!-- Empty -->
+          <div id="pending-empty" class="hidden p-8 sm:p-12 text-center">
+            <div class="inline-flex items-center justify-center w-12 h-12 rounded-full bg-green-50 text-green-500 mb-3">
+              <svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" />
+              </svg>
+            </div>
+            <p class="text-sm font-medium text-slate-700">All caught up!</p>
+            <p class="text-xs text-slate-500 mt-0.5">No pending deliveries.</p>
+          </div>
+
+          <!-- Load more -->
+          <div id="pending-load-more-wrap" class="hidden px-4 py-3 border-t border-slate-100 text-center">
+            <button type="button" id="pending-load-more-btn"
+                    class="inline-flex items-center gap-2 px-4 py-2 rounded-lg border border-slate-300
+                           bg-white text-sm font-medium text-slate-700 hover:bg-slate-50">
+              <span class="btn-label">Load more</span>
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- ═══════════════════════════════════════════════
+           TAB 2: DELIVERY MEN
+           ═══════════════════════════════════════════════ -->
+      <div id="tab-content-men" class="hidden">
+        <div class="flex items-center justify-end mb-3">
+          <button type="button" id="add-delivery-btn"
+                  class="inline-flex items-center gap-2 px-3 py-2 rounded-lg bg-brand-600 hover:bg-brand-700
+                         text-sm font-medium text-white">
+            <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4" />
+            </svg>
+            Add Delivery Man
+          </button>
+        </div>
+
+        <div class="bg-white rounded-xl border border-slate-200 overflow-hidden">
+          <div class="hidden md:block">
+            <div class="overflow-x-auto">
+              <table class="w-full" aria-label="Delivery men list">
+                <thead>
+                  <tr class="border-b border-slate-200 bg-slate-50">
+                    <th class="text-left text-[11px] font-semibold uppercase tracking-wider text-slate-500 px-4 py-3 whitespace-nowrap">Code</th>
+                    <th class="text-left text-[11px] font-semibold uppercase tracking-wider text-slate-500 px-4 py-3">Delivery Man</th>
+                    <th class="text-left text-[11px] font-semibold uppercase tracking-wider text-slate-500 px-4 py-3">Vehicle</th>
+                    <th class="text-right text-[11px] font-semibold uppercase tracking-wider text-slate-500 px-4 py-3">Assigned</th>
+                    <th class="text-right text-[11px] font-semibold uppercase tracking-wider text-slate-500 px-4 py-3">Delivered</th>
+                    <th class="text-center text-[11px] font-semibold uppercase tracking-wider text-slate-500 px-4 py-3">Status</th>
+                    <th class="text-right text-[11px] font-semibold uppercase tracking-wider text-slate-500 px-4 py-3">Actions</th>
+                  </tr>
+                </thead>
+                <tbody id="delivery-tbody" class="divide-y divide-slate-100"></tbody>
+              </table>
+            </div>
+          </div>
+          <div id="delivery-cards" class="md:hidden divide-y divide-slate-100"></div>
+
+          <div id="delivery-empty" class="hidden p-8 sm:p-12 text-center">
+            <div class="inline-flex items-center justify-center w-12 h-12 rounded-full bg-slate-100 text-slate-400 mb-3">
+              <svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M13 16V6a1 1 0 00-1-1H4a1 1 0 00-1 1v10a1 1 0 001 1h1m8-1a1 1 0 01-1 1H9m4-1V8a1 1 0 011-1h2.586a1 1 0 01.707.293l3.414 3.414a1 1 0 01.293.707V16a1 1 0 01-1 1h-1m-6-1a1 1 0 001 1h1M5 17a2 2 0 104 0 2 2 0 00-4 0zm10 0a2 2 0 104 0 2 2 0 00-4 0z" />
+              </svg>
+            </div>
+            <p class="text-sm font-medium text-slate-700" id="empty-title">No delivery men yet</p>
+            <p class="text-xs text-slate-500 mt-0.5" id="empty-desc">Add your first delivery man to get started.</p>
+            <button type="button" id="empty-add-btn"
+                    class="inline-flex items-center gap-2 mt-4 px-3 py-2 rounded-lg bg-brand-600 hover:bg-brand-700 text-sm font-medium text-white">
+              Add delivery man
+            </button>
+          </div>
+
+          <div id="load-more-wrap" class="hidden px-4 py-3 border-t border-slate-100 text-center">
+            <button type="button" id="load-more-btn"
+                    class="inline-flex items-center gap-2 px-4 py-2 rounded-lg border border-slate-300
+                           bg-white text-sm font-medium text-slate-700 hover:bg-slate-50">
+              <span class="btn-label">Load more</span>
+            </button>
+          </div>
+        </div>
+      </div>
+    </main>
+
+    <footer class="border-t border-slate-200 bg-white">
+      <div class="px-4 lg:px-6 py-4 text-xs text-slate-500 text-center sm:text-left sm:flex sm:items-center sm:justify-between">
+        <p>© <span id="footer-year"></span> Order Management System</p>
+      </div>
+    </footer>
+  </div>
+
+  <!-- ══════════════════════════════════════════════════════
+       ASSIGN DELIVERY MODAL
+       ══════════════════════════════════════════════════════ -->
+  <div id="assign-modal" class="modal-backdrop" role="dialog" aria-modal="true"
+       aria-labelledby="assign-modal-title" aria-hidden="true">
+    <div class="modal-panel" role="document">
+      <div class="modal-grab"></div>
+
+      <div class="flex items-start justify-between gap-3 px-5 sm:px-6 pt-4 sm:pt-5 pb-3 border-b border-slate-100">
+        <div class="flex items-center gap-3 min-w-0">
+          <span class="inline-flex items-center justify-center w-10 h-10 rounded-xl bg-brand-50 text-brand-600 shrink-0">
+            <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+            </svg>
+          </span>
+          <div class="min-w-0">
+            <h2 id="assign-modal-title" class="text-base sm:text-lg font-semibold text-slate-900">Assign Delivery Man</h2>
+            <p id="assign-modal-sub" class="text-xs text-slate-500 mt-0.5">—</p>
+          </div>
+        </div>
+        <button type="button" id="assign-modal-close"
+                class="shrink-0 inline-flex items-center justify-center w-9 h-9 rounded-lg
+                       text-slate-400 hover:bg-slate-100 hover:text-slate-600"
+                aria-label="Close">
+          <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+          </svg>
+        </button>
+      </div>
+
+      <div class="px-5 sm:px-6 py-4 overflow-y-auto">
+        <p class="text-sm text-slate-600 mb-3">Select a delivery man to assign this order:</p>
+        <select id="assign-select"
+                class="w-full px-3 py-2.5 rounded-lg border border-slate-300 text-sm bg-white
+                       focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-brand-500">
+          <option value="">Select delivery man…</option>
+        </select>
+      </div>
+
+      <div class="flex items-center justify-end gap-2 px-5 sm:px-6 py-4 border-t border-slate-100">
+        <button type="button" id="assign-cancel"
+                class="inline-flex items-center justify-center px-4 py-2.5 rounded-lg
+                       text-sm font-medium text-slate-700 hover:bg-slate-100">
+          Cancel
+        </button>
+        <button type="button" id="assign-confirm"
+                class="inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg
+                       bg-brand-600 hover:bg-brand-700 text-white text-sm font-medium
+                       disabled:opacity-60 disabled:cursor-not-allowed">
+          <span class="btn-label">Assign</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════════════════════
+       DELIVER ORDER MODAL (main delivery action)
+       ══════════════════════════════════════════════════════ -->
+  <div id="deliver-modal" class="modal-backdrop" role="dialog" aria-modal="true"
+       aria-labelledby="deliver-modal-title" aria-hidden="true">
+    <div class="modal-panel" role="document" style="max-width: 640px;">
+      <div class="modal-grab"></div>
+
+      <div class="flex items-start justify-between gap-3 px-5 sm:px-6 pt-4 sm:pt-5 pb-3 border-b border-slate-100">
+        <div class="flex items-center gap-3 min-w-0">
+          <span class="inline-flex items-center justify-center w-10 h-10 rounded-xl bg-green-50 text-green-600 shrink-0">
+            <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" />
+            </svg>
+          </span>
+          <div class="min-w-0">
+            <h2 id="deliver-modal-title" class="text-base sm:text-lg font-semibold text-slate-900">Deliver Order</h2>
+            <p id="deliver-modal-sub" class="text-xs text-slate-500 mt-0.5">—</p>
+          </div>
+        </div>
+        <button type="button" id="deliver-modal-close"
+                class="shrink-0 inline-flex items-center justify-center w-9 h-9 rounded-lg
+                       text-slate-400 hover:bg-slate-100 hover:text-slate-600"
+                aria-label="Close">
+          <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+          </svg>
+        </button>
+      </div>
+
+      <div class="px-5 sm:px-6 py-4 overflow-y-auto flex-1">
+
+        <!-- Customer info -->
+        <div class="mb-4 p-3 rounded-lg bg-slate-50 border border-slate-100">
+          <p class="text-[11px] font-semibold uppercase tracking-wide text-slate-500 mb-1.5">Customer</p>
+          <p class="text-sm font-semibold text-slate-900" id="deliver-customer-name">—</p>
+          <p class="text-xs text-slate-600" id="deliver-customer-phone">—</p>
+          <p class="text-xs text-slate-500 mt-0.5" id="deliver-customer-address">—</p>
+        </div>
+
+        <!-- Product list (adjustable) -->
+        <p class="text-[11px] font-semibold uppercase tracking-wide text-slate-500 mb-2">Products</p>
+        <div id="deliver-items" class="space-y-3 mb-4"></div>
+
+        <!-- Bill summary -->
+        <div class="p-4 rounded-lg bg-slate-50 border border-slate-100 space-y-2">
+          <div class="flex items-center justify-between text-sm">
+            <span class="text-slate-600">Delivered subtotal</span>
+            <span class="font-medium text-slate-900" id="deliver-subtotal">৳0.00</span>
+          </div>
+          <div class="flex items-center justify-between text-sm">
+            <span class="text-slate-600">Discount</span>
+            <span class="font-medium text-slate-900" id="deliver-discount">৳0.00</span>
+          </div>
+          <div class="flex items-center justify-between text-sm">
+            <span class="text-slate-600">Delivery charge</span>
+            <span class="font-medium text-slate-900" id="deliver-delivery">৳0.00</span>
+          </div>
+          <div class="flex items-center justify-between border-t border-slate-200 pt-2 mt-2">
+            <span class="text-sm font-semibold text-slate-900">Total</span>
+            <span class="text-lg font-bold text-brand-700" id="deliver-total">৳0.00</span>
+          </div>
+        </div>
+
+        <!-- Payment collection -->
+        <div class="mt-4 grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <div>
+            <label for="deliver-paid" class="block text-xs font-medium text-slate-600 mb-1">
+              Amount collected (৳)
+            </label>
+            <input type="number" id="deliver-paid" min="0" step="0.01" value="0"
+                   class="w-full px-3 py-2.5 rounded-lg border border-slate-300 text-sm text-right
+                          focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-brand-500" />
+          </div>
+          <div>
+            <label for="deliver-method" class="block text-xs font-medium text-slate-600 mb-1">Method</label>
+            <select id="deliver-method"
+                    class="w-full px-3 py-2.5 rounded-lg border border-slate-300 text-sm bg-white
+                           focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-brand-500">
+              <option value="Cash">Cash</option>
+              <option value="bKash">bKash</option>
+              <option value="Nagad">Nagad</option>
+              <option value="Bank">Bank</option>
+              <option value="Other">Other</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- Due indicator -->
+        <div class="mt-3 flex items-center justify-between text-sm p-3 rounded-lg bg-red-50 border border-red-100">
+          <span class="text-red-700 font-medium">Remaining due</span>
+          <span class="font-bold text-red-700" id="deliver-due">৳0.00</span>
+        </div>
+
+        <!-- Note -->
+        <div class="mt-4">
+          <label for="deliver-note" class="block text-xs font-medium text-slate-600 mb-1">Note (optional)</label>
+          <input type="text" id="deliver-note" placeholder="e.g. Customer requested delivery after 6 PM"
+                 class="w-full px-3 py-2.5 rounded-lg border border-slate-300 text-sm
+                        focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-brand-500" />
+        </div>
+      </div>
+
+      <div class="flex items-center justify-end gap-2 px-5 sm:px-6 py-4 border-t border-slate-100 bg-slate-50/50">
+        <button type="button" id="deliver-cancel"
+                class="inline-flex items-center justify-center px-4 py-2.5 rounded-lg
+                       text-sm font-medium text-slate-700 hover:bg-slate-200">
+          Cancel
+        </button>
+        <button type="button" id="deliver-confirm"
+                class="inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-lg
+                       bg-green-600 hover:bg-green-700 text-white text-sm font-medium
+                       disabled:opacity-60 disabled:cursor-not-allowed">
+          <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" />
+          </svg>
+          <span class="btn-label">Mark Delivered</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════════════════════
+       ADD/EDIT DELIVERY MAN MODAL
+       ══════════════════════════════════════════════════════ -->
+  <div id="delivery-modal" class="modal-backdrop" role="dialog" aria-modal="true"
+       aria-labelledby="delivery-modal-title" aria-hidden="true">
+    <div class="modal-panel" role="document">
+      <div class="modal-grab"></div>
+
+      <div class="flex items-start justify-between gap-3 px-5 sm:px-6 pt-4 sm:pt-5 pb-3 border-b border-slate-100">
+        <div class="flex items-center gap-3 min-w-0">
+          <span class="inline-flex items-center justify-center w-10 h-10 rounded-xl bg-brand-50 text-brand-600 shrink-0">
+            <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+            </svg>
+          </span>
+          <div class="min-w-0">
+            <h2 id="delivery-modal-title" class="text-base sm:text-lg font-semibold text-slate-900">Add Delivery Man</h2>
+            <p id="delivery-modal-sub" class="text-xs text-slate-500 mt-0.5">Code auto-generates (DLV-00001).</p>
+          </div>
+        </div>
+        <button type="button" id="delivery-modal-close"
+                class="shrink-0 inline-flex items-center justify-center w-9 h-9 rounded-lg
+                       text-slate-400 hover:bg-slate-100 hover:text-slate-600"
+                aria-label="Close">
+          <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+          </svg>
+        </button>
+      </div>
+
+      <div class="px-5 sm:px-6 py-4 overflow-y-auto">
+        <form id="delivery-modal-form" novalidate autocomplete="off">
+          <div class="mb-3">
+            <label for="modal-name" class="block text-sm font-medium text-slate-700 mb-1.5">
+              Full name <span class="text-red-500">*</span>
+            </label>
+            <input type="text" id="modal-name" required maxlength="80" placeholder="e.g. Karim Ali"
+                   class="w-full px-3 py-2.5 rounded-lg border border-slate-300 text-sm
+                          focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-brand-500" />
+          </div>
+
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-3">
+            <div>
+              <label for="modal-phone" class="block text-sm font-medium text-slate-700 mb-1.5">
+                Phone <span class="text-red-500">*</span>
+              </label>
+              <input type="tel" id="modal-phone" required placeholder="01XXXXXXXXX"
+                     class="w-full px-3 py-2.5 rounded-lg border border-slate-300 text-sm
+                            focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-brand-500" />
+            </div>
+            <div>
+              <label for="modal-alt-phone" class="block text-sm font-medium text-slate-700 mb-1.5">Alt phone</label>
+              <input type="tel" id="modal-alt-phone" placeholder="Optional"
+                     class="w-full px-3 py-2.5 rounded-lg border border-slate-300 text-sm
+                            focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-brand-500" />
+            </div>
+          </div>
+
+          <div class="mb-3">
+            <label for="modal-address" class="block text-sm font-medium text-slate-700 mb-1.5">Address</label>
+            <textarea id="modal-address" rows="2" maxlength="200" placeholder="House / Road / Area"
+                      class="w-full px-3 py-2.5 rounded-lg border border-slate-300 text-sm resize-y
+                             focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-brand-500"></textarea>
+          </div>
+
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-3">
+            <div>
+              <label for="modal-area" class="block text-sm font-medium text-slate-700 mb-1.5">Area</label>
+              <input type="text" id="modal-area" maxlength="60" placeholder="e.g. Mirpur"
+                     class="w-full px-3 py-2.5 rounded-lg border border-slate-300 text-sm
+                            focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-brand-500" />
+            </div>
+            <div>
+              <label for="modal-district" class="block text-sm font-medium text-slate-700 mb-1.5">District</label>
+              <input type="text" id="modal-district" maxlength="60" placeholder="e.g. Dhaka"
+                     class="w-full px-3 py-2.5 rounded-lg border border-slate-300 text-sm
+                            focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-brand-500" />
+            </div>
+          </div>
+
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-3">
+            <div>
+              <label for="modal-vehicle" class="block text-sm font-medium text-slate-700 mb-1.5">Vehicle</label>
+              <select id="modal-vehicle"
+                      class="w-full px-3 py-2.5 rounded-lg border border-slate-300 text-sm bg-white
+                             focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-brand-500">
+                <option value="Motorcycle">Motorcycle</option>
+                <option value="Bicycle">Bicycle</option>
+                <option value="Van">Van</option>
+                <option value="Car">Car</option>
+                <option value="Other">Other</option>
+              </select>
+            </div>
+            <div>
+              <label for="modal-vehicle-num" class="block text-sm font-medium text-slate-700 mb-1.5">Vehicle number</label>
+              <input type="text" id="modal-vehicle-num" maxlength="30" placeholder="e.g. DHA-1234"
+                     class="w-full px-3 py-2.5 rounded-lg border border-slate-300 text-sm
+                            focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-brand-500" />
+            </div>
+          </div>
+
+          <div>
+            <label class="block text-sm font-medium text-slate-700 mb-1.5">Status</label>
+            <div class="flex items-center gap-4">
+              <label class="inline-flex items-center gap-2 text-sm cursor-pointer">
+                <input type="radio" name="status" value="active" checked class="w-4 h-4 text-brand-600 focus:ring-brand-500" />
+                <span>Active</span>
+              </label>
+              <label class="inline-flex items-center gap-2 text-sm cursor-pointer">
+                <input type="radio" name="status" value="inactive" class="w-4 h-4 text-brand-600 focus:ring-brand-500" />
+                <span>Inactive</span>
+              </label>
+            </div>
+          </div>
+        </form>
+      </div>
+
+      <div class="flex items-center justify-end gap-2 px-5 sm:px-6 py-4 border-t border-slate-100">
+        <button type="button" id="delivery-modal-cancel"
+                class="inline-flex items-center justify-center px-4 py-2.5 rounded-lg
+                       text-sm font-medium text-slate-700 hover:bg-slate-100">
+          Cancel
+        </button>
+        <button type="button" id="delivery-modal-save"
+                class="inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg
+                       bg-brand-600 hover:bg-brand-700 text-white text-sm font-medium
+                       disabled:opacity-60 disabled:cursor-not-allowed">
+          <span class="save-label">Save Delivery Man</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast -->
+  <div id="toast-container"
+       class="fixed top-4 right-4 left-4 sm:left-auto sm:top-6 sm:right-6 z-[9999]
+              flex flex-col gap-2 pointer-events-none"
+       role="region" aria-label="Notifications" aria-live="polite"></div>
+
+  <script type="module">
+    import { requireAuth, logoutUser } from "../assets/js/firebase/auth.js";
+    import { toast } from "../assets/js/utils/toast.js";
+    import {
+      queryCollectionCached,
+      createDeliveryManAtomic,
+      updateDeliveryManAtomic,
+      deleteDocument,
+      updateDocument,
+      createDocument,
+      cacheClear,
+    } from "../assets/js/firebase/firestore.js";
+    import {
+      formatCurrency, isValidPhone, setFieldError,
+      clearFieldError, debounce, escapeHtml, timeAgo,
+    } from "../assets/js/utils/helpers.js";
+
+    /* ─── AUTH GUARD ──────────────────────────────────── */
+    let currentUser, currentProfile;
+    try {
+      const a = await requireAuth("../../login.html");
+      currentUser = a.user;
+      currentProfile = a.profile;
+    } catch { throw new Error("Unauthorized"); }
+
+    /* ─── USER UI ─────────────────────────────────────── */
+    const userName  = currentProfile?.name || currentUser.displayName || "User";
+    const userRole  = currentProfile?.role || "staff";
+    const userEmail = currentUser.email || "";
+    const initial   = (userName.charAt(0) || "U").toUpperCase();
+
+    document.getElementById("profile-avatar").textContent = initial;
+    document.getElementById("profile-name").textContent = userName;
+    document.getElementById("profile-role").textContent = capitalize(userRole);
+    document.getElementById("menu-name").textContent = userName;
+    document.getElementById("menu-email").textContent = userEmail;
+    document.getElementById("sidebar-avatar").textContent = initial;
+    document.getElementById("sidebar-name").textContent = userName;
+    document.getElementById("sidebar-role").textContent = capitalize(userRole);
+    document.getElementById("footer-year").textContent = new Date().getFullYear();
+
+    /* ─── SIDEBAR / NAVBAR ─────────────────────────────── */
+    const sidebar = document.getElementById("app-sidebar");
+    const overlay = document.getElementById("sidebar-overlay");
+    const toggleBtn = document.getElementById("sidebar-toggle");
+    const closeBtn  = document.getElementById("sidebar-close");
+    const openSidebar  = () => { sidebar.classList.add("is-open"); overlay.classList.add("is-visible"); document.body.classList.add("no-scroll"); };
+    const closeSidebar = () => { sidebar.classList.remove("is-open"); overlay.classList.remove("is-visible"); document.body.classList.remove("no-scroll"); };
+    toggleBtn.addEventListener("click", openSidebar);
+    closeBtn.addEventListener("click", closeSidebar);
+    overlay.addEventListener("click", closeSidebar);
+    sidebar.querySelectorAll("a.nav-link").forEach((a) => a.addEventListener("click", () => { if (innerWidth < 1024) closeSidebar(); }));
+    sidebar.querySelector(`a[href="${location.pathname.split("/").pop()}"]`)?.classList.add("active");
+
+    const profileBtn  = document.getElementById("profile-btn");
+    const profileMenu = document.getElementById("profile-menu");
+    profileBtn.addEventListener("click", (e) => { e.stopPropagation(); profileMenu.classList.toggle("hidden"); });
+    document.addEventListener("click", (e) => { if (!profileMenu.contains(e.target) && !profileBtn.contains(e.target)) profileMenu.classList.add("hidden"); });
+
+    document.getElementById("logout-btn").addEventListener("click", async () => {
+      try { await logoutUser(); toast.success("Logged out"); setTimeout(() => location.replace("../../login.html"), 300); }
+      catch { toast.error("Logout failed"); }
+    });
+
+    /* ─── STATE ───────────────────────────────────────── */
+    const PAGE_SIZE = 30;
+    const state = {
+      tab: "pending",           // pending | men
+      orders: [],               // pending deliveries
+      men: [],                  // delivery men
+      ordersLastDoc: null,
+      ordersHasMore: false,
+      menLastDoc: null,
+      menHasMore: false,
+      loading: false,
+      search: "",
+      // Action targets
+      assigningOrderId: null,
+      deliveringOrderId: null,
+      editingManId: null,
+      // For deliver modal: track per-item delivered quantity
+      deliverItems: [],         // [{index, productId, name, qty, price, deliveredQty}]
+      deliverOrder: null,
+    };
+
+    /* ─── DOM REFS ────────────────────────────────────── */
+    const pendingTbody = document.getElementById("pending-tbody");
+    const pendingCards = document.getElementById("pending-cards");
+    const pendingEmpty = document.getElementById("pending-empty");
+    const pendingLoadWrap = document.getElementById("pending-load-more-wrap");
+    const pendingLoadBtn = document.getElementById("pending-load-more-btn");
+
+    const deliveryTbody = document.getElementById("delivery-tbody");
+    const deliveryCards = document.getElementById("delivery-cards");
+    const deliveryEmpty = document.getElementById("delivery-empty");
+    const loadMoreWrap = document.getElementById("load-more-wrap");
+    const loadMoreBtn = document.getElementById("load-more-btn");
+    const emptyAddBtn = document.getElementById("empty-add-btn");
+    const addDeliveryBtn = document.getElementById("add-delivery-btn");
+
+    const searchInput = document.getElementById("search-input");
+    const statusFilter = document.getElementById("status-filter");
+    const refreshBtn = document.getElementById("refresh-btn");
+    const countLabel = document.getElementById("delivery-count-label");
+
+    const tabPendingBtn = document.getElementById("tab-pending");
+    const tabMenBtn = document.getElementById("tab-men");
+    const tabPendingCount = document.getElementById("tab-pending-count");
+    const tabMenCount = document.getElementById("tab-men-count");
+    const tabContentPending = document.getElementById("tab-content-pending");
+    const tabContentMen = document.getElementById("tab-content-men");
+
+    /* ════════════════════════════════════════════════════
+       TAB SWITCHING
+       ════════════════════════════════════════════════════ */
+    function switchTab(tab) {
+      state.tab = tab;
+      state.search = "";
+      searchInput.value = "";
+
+      if (tab === "pending") {
+        tabPendingBtn.classList.add("active");
+        tabMenBtn.classList.remove("active");
+        tabContentPending.classList.remove("hidden");
+        tabContentMen.classList.add("hidden");
+        // Update filter
+        statusFilter.innerHTML = `
+          <option value="">All</option>
+          <option value="Pending">Pending</option>
+          <option value="Confirmed">Confirmed</option>
+          <option value="Processing">Processing</option>
+          <option value="Ready to Ship">Ready to Ship</option>
+          <option value="Assigned">Assigned</option>
+          <option value="Out for Delivery">Out for Delivery</option>
+        `;
+        loadPendingOrders({ reset: true });
+      } else {
+        tabMenBtn.classList.add("active");
+        tabPendingBtn.classList.remove("active");
+        tabContentMen.classList.remove("hidden");
+        tabContentPending.classList.add("hidden");
+        statusFilter.innerHTML = `
+          <option value="">All status</option>
+          <option value="active">Active only</option>
+          <option value="inactive">Inactive only</option>
+        `;
+        loadDeliveryMen({ reset: true });
+      }
+    }
+
+    tabPendingBtn.addEventListener("click", () => switchTab("pending"));
+    tabMenBtn.addEventListener("click", () => switchTab("men"));
+
+    /* ════════════════════════════════════════════════════
+       LOAD PENDING ORDERS
+       ════════════════════════════════════════════════════ */
+    async function loadPendingOrders({ reset = false } = {}) {
+      if (state.loading) return;
+      state.loading = true;
+      refreshBtn.disabled = true;
+
+      if (reset) {
+        state.orders = [];
+        state.ordersLastDoc = null;
+      }
+
+      // Load all orders, filter client-side (delivery.status != Delivered/Cancelled)
+      let result;
+      try {
+        result = await queryCollectionCached("orders", {
+          order: [["createdAt", "desc"]],
+          limitCount: 50,
+          cursor: reset ? null : state.ordersLastDoc,
+          cacheTtlMs: 30000,
+        });
+      } catch (err) {
+        console.error("Load orders failed:", err);
+        toast.error("Could not load pending deliveries.");
+        state.loading = false;
+        refreshBtn.disabled = false;
+        return;
+      }
+
+      const fresh = result.items.filter((o) => {
+        const dStatus = o.delivery?.status || "Pending";
+        const oStatus = o.status || "Pending";
+        // Skip if already delivered or cancelled/returned
+        if (dStatus === "Delivered") return false;
+        if (["Delivered", "Cancelled", "Returned"].includes(oStatus)) return false;
+        // Skip if already in current list
+        return !state.orders.find((existing) => existing.id === o.id);
+      });
+
+      state.orders = state.orders.concat(fresh);
+      state.ordersLastDoc = result.lastDoc;
+      state.ordersHasMore = result.hasMore;
+      state.loading = false;
+      refreshBtn.disabled = false;
+
+      renderPending();
+      computeSummary();
+    }
+
+    function renderPending() {
+      const filtered = applyPendingFilters(state.orders);
+
+      tabPendingCount.textContent = state.orders.length;
+
+      if (filtered.length === 0) {
+        pendingTbody.innerHTML = "";
+        pendingCards.innerHTML = "";
+        pendingEmpty.classList.remove("hidden");
+        pendingLoadWrap.classList.add("hidden");
+        countLabel.textContent = state.orders.length === 0
+          ? "No pending deliveries"
+          : `${filtered.length} of ${state.orders.length} shown`;
+        return;
+      }
+
+      pendingEmpty.classList.add("hidden");
+      pendingTbody.innerHTML = filtered.map(renderPendingRow).join("");
+      pendingCards.innerHTML = filtered.map(renderPendingCard).join("");
+      pendingLoadWrap.classList.toggle("hidden", !state.ordersHasMore);
+      countLabel.textContent = `${state.orders.length} pending deliver${state.orders.length > 1 ? "ies" : "y"}`;
+    }
+
+    function applyPendingFilters(items) {
+      let list = items;
+      if (state.search) {
+        const q = state.search.toLowerCase().trim();
+        list = list.filter((o) => {
+          const hay = [
+            o.orderCode, o.customer?.name, o.customer?.phone,
+            o.shopCode, o.shopName, o.deliveryManName,
+          ].filter(Boolean).join(" ").toLowerCase();
+          return hay.includes(q);
+        });
+      }
+      const statusF = statusFilter.value;
+      if (statusF) {
+        list = list.filter((o) => (o.status || "Pending") === statusF);
+      }
+      return list;
+    }
+
+    /* ─── DELIVERY STATUS BADGE ───────────────────────── */
+    function deliveryStatusBadge(status) {
+      const map = {
+        "Pending":           "badge-pending",
+        "Assigned":          "badge-assigned",
+        "Picked Up":         "badge-processing",
+        "Out for Delivery":  "badge-out",
+        "Delivered":         "badge-delivered",
+        "Failed":            "badge-failed",
+        "Returned":          "badge-returned",
+      };
+      const cls = map[status] || "badge-returned";
+      return `<span class="badge ${cls}"><span class="badge-dot"></span>${escapeHtml(status || "Pending")}</span>`;
+    }
+
+    /* ─── PENDING ROW ─────────────────────────────────── */
+    function renderPendingRow(o) {
+      const orderCode = escapeHtml(o.orderCode || o.id.slice(0, 8));
+      const custName = escapeHtml(o.customer?.name || "—");
+      const custPhone = escapeHtml(o.customer?.phone || "");
+      const total = formatCurrency(o.grandTotal || 0);
+      const paid = formatCurrency(o.payment?.paid || 0);
+      const due = o.payment?.due || 0;
+      const dueStr = formatCurrency(due);
+      const manName = escapeHtml(o.deliveryManName || "—");
+      const dStatus = o.delivery?.status || "Pending";
+
+      return `
+        <tr class="hover:bg-slate-50" data-id="${o.id}">
+          <td class="px-4 py-3">
+            <span class="inline-flex items-center px-2 py-0.5 rounded-md bg-brand-50 text-brand-700 text-[11px] font-semibold whitespace-nowrap">
+              ${orderCode}
+            </span>
+          </td>
+          <td class="px-4 py-3">
+            <p class="text-sm font-medium text-slate-900 truncate max-w-[200px]">${custName}</p>
+            ${custPhone ? `<p class="text-xs text-slate-500 mt-0.5">${custPhone}</p>` : ""}
+          </td>
+          <td class="px-4 py-3 text-right">
+            <span class="text-sm font-semibold text-slate-900 whitespace-nowrap">${total}</span>
+          </td>
+          <td class="px-4 py-3 text-right">
+            <span class="text-sm font-medium text-green-600 whitespace-nowrap">${paid}</span>
+          </td>
+          <td class="px-4 py-3 text-right">
+            <span class="text-sm font-semibold whitespace-nowrap ${due > 0 ? "text-red-600" : "text-slate-400"}">${dueStr}</span>
+          </td>
+          <td class="px-4 py-3">
+            <p class="text-xs text-slate-700">${manName}</p>
+          </td>
+          <td class="px-4 py-3 text-center">${deliveryStatusBadge(dStatus)}</td>
+          <td class="px-4 py-3">
+            <div class="flex items-center justify-end gap-1">
+              ${!o.deliveryManId
+                ? `<button type="button" class="assign-btn inline-flex items-center justify-center gap-1 px-2.5 py-1.5 rounded-md text-xs font-medium
+                             text-brand-700 bg-brand-50 hover:bg-brand-100 border border-brand-200"
+                          data-id="${o.id}">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                      <path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4" />
+                    </svg>
+                    Assign
+                   </button>`
+                : `<button type="button" class="deliver-btn inline-flex items-center justify-center gap-1 px-2.5 py-1.5 rounded-md text-xs font-medium
+                             text-white bg-green-600 hover:bg-green-700"
+                          data-id="${o.id}">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                      <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" />
+                    </svg>
+                    Deliver
+                   </button>`
+              }
+            </div>
+          </td>
+        </tr>
+      `;
+    }
+
+    function renderPendingCard(o) {
+      const orderCode = escapeHtml(o.orderCode || o.id.slice(0, 8));
+      const custName = escapeHtml(o.customer?.name || "—");
+      const custPhone = escapeHtml(o.customer?.phone || "");
+      const total = formatCurrency(o.grandTotal || 0);
+      const due = o.payment?.due || 0;
+      const manName = escapeHtml(o.deliveryManName || "Not assigned");
+      const dStatus = o.delivery?.status || "Pending";
+
+      return `
+        <div class="p-4" data-id="${o.id}">
+          <div class="flex items-start justify-between gap-3 mb-3">
+            <div class="min-w-0">
+              <span class="inline-flex items-center px-2 py-0.5 rounded-md bg-brand-50 text-brand-700 text-[10px] font-semibold">${orderCode}</span>
+              <p class="text-sm font-semibold text-slate-900 mt-1.5 truncate">${custName}</p>
+              ${custPhone ? `<p class="text-xs text-slate-500 mt-0.5">${custPhone}</p>` : ""}
+            </div>
+            ${deliveryStatusBadge(dStatus)}
+          </div>
+
+          <div class="space-y-1 text-xs mb-3">
+            <div class="flex justify-between">
+              <span class="text-slate-500">Total</span>
+              <span class="font-semibold text-slate-900">${total}</span>
+            </div>
+            <div class="flex justify-between">
+              <span class="text-slate-500">Due</span>
+              <span class="font-semibold ${due > 0 ? "text-red-600" : "text-slate-400"}">${formatCurrency(due)}</span>
+            </div>
+            <div class="flex justify-between">
+              <span class="text-slate-500">Assigned to</span>
+              <span class="text-slate-700">${manName}</span>
+            </div>
+          </div>
+
+          ${!o.deliveryManId
+            ? `<button type="button" class="assign-btn w-full inline-flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg
+                          bg-brand-600 hover:bg-brand-700 text-white text-xs font-medium"
+                      data-id="${o.id}">
+                <svg xmlns="http://www.w3.org/2000/svg" class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4" />
+                </svg>
+                Assign Delivery Man
+               </button>`
+            : `<button type="button" class="deliver-btn w-full inline-flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg
+                          bg-green-600 hover:bg-green-700 text-white text-xs font-medium"
+                      data-id="${o.id}">
+                <svg xmlns="http://www.w3.org/2000/svg" class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" />
+                </svg>
+                Mark Delivered
+               </button>`
+          }
+        </div>
+      `;
+    }
+
+    /* ════════════════════════════════════════════════════
+       LOAD DELIVERY MEN
+       ════════════════════════════════════════════════════ */
+    async function loadDeliveryMen({ reset = false } = {}) {
+      if (state.loading) return;
+      state.loading = true;
+      refreshBtn.disabled = true;
+
+      if (reset) {
+        state.men = [];
+        state.menLastDoc = null;
+      }
+
+      const filters = [];
+      const sf = statusFilter.value;
+      if (sf && (sf === "active" || sf === "inactive")) {
+        filters.push(["status", "==", sf]);
+      }
+
+      let result;
+      try {
+        result = await queryCollectionCached("deliveryMen", {
+          filters,
+          order: [["createdAt", "desc"]],
+          limitCount: PAGE_SIZE,
+          cursor: reset ? null : state.menLastDoc,
+          cacheTtlMs: 60000,
+        });
+      } catch (err) {
+        console.error("Load delivery men failed:", err);
+        toast.error("Could not load delivery men.");
+        state.loading = false;
+        refreshBtn.disabled = false;
+        return;
+      }
+
+      const existingIds = new Set(state.men.map((d) => d.id));
+      const fresh = result.items.filter((d) => !existingIds.has(d.id));
+
+      state.men = state.men.concat(fresh);
+      state.menLastDoc = result.lastDoc;
+      state.menHasMore = result.hasMore;
+      state.loading = false;
+      refreshBtn.disabled = false;
+
+      renderMen();
+      computeSummary();
+    }
+
+    function renderMen() {
+      const filtered = applyMenFilters(state.men);
+
+      tabMenCount.textContent = state.men.length;
+
+      if (filtered.length === 0) {
+        deliveryTbody.innerHTML = "";
+        deliveryCards.innerHTML = "";
+        deliveryEmpty.classList.remove("hidden");
+        loadMoreWrap.classList.add("hidden");
+        countLabel.textContent = state.men.length === 0
+          ? "No delivery men yet"
+          : `${filtered.length} of ${state.men.length} shown`;
+        return;
+      }
+
+      deliveryEmpty.classList.add("hidden");
+      deliveryTbody.innerHTML = filtered.map(renderManRow).join("");
+      deliveryCards.innerHTML = filtered.map(renderManCard).join("");
+      loadMoreWrap.classList.toggle("hidden", !state.menHasMore);
+      countLabel.textContent = `${state.men.length} delivery ${state.men.length > 1 ? "men" : "man"} loaded`;
+    }
+
+    function applyMenFilters(items) {
+      if (!state.search) return items;
+      const q = state.search.toLowerCase().trim();
+      return items.filter((d) => {
+        const hay = [d.code, d.name, d.phone, d.altPhone, d.area, d.district, d.vehicleNumber]
+          .filter(Boolean).join(" ").toLowerCase();
+        return hay.includes(q);
+      });
+    }
+
+    function manStatusBadge(status) {
+      return status === "inactive"
+        ? `<span class="badge badge-returned"><span class="badge-dot"></span>Inactive</span>`
+        : `<span class="badge badge-delivered"><span class="badge-dot"></span>Active</span>`;
+    }
+
+    function renderManRow(d) {
+      const code = escapeHtml(d.code || "—");
+      const name = escapeHtml(d.name || "—");
+      const phone = escapeHtml(d.phone || "");
+      const vehicle = escapeHtml(d.vehicleType || "—");
+      const vehicleNum = escapeHtml(d.vehicleNumber || "");
+      const stats = d.stats || {};
+
+      return `
+        <tr class="hover:bg-slate-50" data-id="${d.id}">
+          <td class="px-4 py-3">
+            <span class="inline-flex items-center px-2 py-0.5 rounded-md bg-brand-50 text-brand-700 text-[11px] font-semibold whitespace-nowrap">
+              ${code}
+            </span>
+          </td>
+          <td class="px-4 py-3">
+            <p class="text-sm font-medium text-slate-900 truncate max-w-[200px]">${name}</p>
+            ${phone ? `<p class="text-xs text-slate-500 mt-0.5">${phone}</p>` : ""}
+          </td>
+          <td class="px-4 py-3">
+            <p class="text-sm text-slate-700">${vehicle}</p>
+            ${vehicleNum ? `<p class="text-xs text-slate-500">${vehicleNum}</p>` : ""}
+          </td>
+          <td class="px-4 py-3 text-right">
+            <span class="text-sm font-semibold text-slate-900">${stats.totalAssigned || 0}</span>
+          </td>
+          <td class="px-4 py-3 text-right">
+            <span class="text-sm font-semibold text-green-600">${stats.totalDelivered || 0}</span>
+          </td>
+          <td class="px-4 py-3 text-center">${manStatusBadge(d.status)}</td>
+          <td class="px-4 py-3">
+            <div class="flex items-center justify-end gap-1">
+              <button type="button" class="man-edit-btn inline-flex items-center justify-center w-8 h-8 rounded-md text-slate-600 hover:bg-slate-100"
+                      data-id="${d.id}" title="Edit">
+                <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                </svg>
+              </button>
+            </div>
+          </td>
+        </tr>
+      `;
+    }
+
+    function renderManCard(d) {
+      const code = escapeHtml(d.code || "—");
+      const name = escapeHtml(d.name || "—");
+      const phone = escapeHtml(d.phone || "");
+      const area = escapeHtml(d.area || "");
+      const vehicle = escapeHtml(d.vehicleType || "");
+      const stats = d.stats || {};
+
+      return `
+        <div class="p-4" data-id="${d.id}">
+          <div class="flex items-start justify-between gap-3 mb-3">
+            <div class="min-w-0">
+              <span class="inline-flex items-center px-2 py-0.5 rounded-md bg-brand-50 text-brand-700 text-[10px] font-semibold">${code}</span>
+              <p class="text-sm font-semibold text-slate-900 mt-1.5 truncate">${name}</p>
+              ${phone ? `<p class="text-xs text-slate-500 mt-0.5">${phone}</p>` : ""}
+              ${area ? `<p class="text-xs text-slate-500">${area}</p>` : ""}
+            </div>
+            ${manStatusBadge(d.status)}
+          </div>
+          <div class="grid grid-cols-3 gap-2 text-xs mb-3">
+            <div class="p-2 rounded-lg bg-slate-50">
+              <p class="text-[10px] uppercase font-semibold text-slate-500">Vehicle</p>
+              <p class="text-xs font-bold text-slate-900 mt-0.5">${vehicle || "—"}</p>
+            </div>
+            <div class="p-2 rounded-lg bg-slate-50">
+              <p class="text-[10px] uppercase font-semibold text-slate-500">Assigned</p>
+              <p class="text-sm font-bold text-slate-900 mt-0.5">${stats.totalAssigned || 0}</p>
+            </div>
+            <div class="p-2 rounded-lg bg-slate-50">
+              <p class="text-[10px] uppercase font-semibold text-slate-500">Delivered</p>
+              <p class="text-sm font-bold text-green-600 mt-0.5">${stats.totalDelivered || 0}</p>
+            </div>
+          </div>
+          <button type="button" class="man-edit-btn w-full inline-flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg
+                          border border-slate-300 text-slate-700 hover:bg-slate-50 text-xs font-medium"
+                  data-id="${d.id}">
+            Edit
+          </button>
+        </div>
+      `;
+    }
+
+    /* ════════════════════════════════════════════════════
+       SUMMARY
+       ════════════════════════════════════════════════════ */
+    function computeSummary() {
+      const pending = state.orders.filter((o) => (o.delivery?.status || "Pending") === "Pending").length;
+      const assigned = state.orders.filter((o) => o.deliveryManId && (o.delivery?.status || "Pending") !== "Delivered").length;
+
+      // Today's delivered
+      const today = new Date();
+      const startOfToday = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+      let deliveredToday = 0;
+      let collectedToday = 0;
+
+      state.orders.forEach((o) => {
+        if (o.delivery?.status === "Delivered" && o.delivery?.deliveredAt?.toDate) {
+          const d = o.delivery.deliveredAt.toDate();
+          if (d >= startOfToday) {
+            deliveredToday++;
+            collectedToday += Number(o.delivery?.collectedAmount) || 0;
+          }
+        }
+      });
+
+      document.getElementById("sum-pending").textContent = pending;
+      document.getElementById("sum-assigned").textContent = assigned;
+      document.getElementById("sum-delivered-today").textContent = deliveredToday;
+      document.getElementById("sum-collected-today").textContent = formatCurrency(collectedToday);
+    }
+
+    /* ════════════════════════════════════════════════════
+       ASSIGN MODAL
+       ════════════════════════════════════════════════════ */
+    const assignModal = document.getElementById("assign-modal");
+    const assignModalSub = document.getElementById("assign-modal-sub");
+    const assignSelect = document.getElementById("assign-select");
+    const assignConfirm = document.getElementById("assign-confirm");
+    const assignCancel = document.getElementById("assign-cancel");
+    const assignClose = document.getElementById("assign-modal-close");
+
+    function openAssignModal(orderId) {
+      const order = state.orders.find((o) => o.id === orderId);
+      if (!order) return;
+
+      // Need delivery men — load if not already
+      if (state.men.length === 0) {
+        loadDeliveryMen({ reset: true }).then(() => renderAssignOptions());
+      } else {
+        renderAssignOptions();
+      }
+
+      state.assigningOrderId = orderId;
+      assignModalSub.textContent = order.orderCode || order.id.slice(0, 8);
+
+      assignModal.classList.add("is-open");
+      assignModal.setAttribute("aria-hidden", "false");
+      document.body.classList.add("no-scroll");
+    }
+
+    function renderAssignOptions() {
+      const activeMen = state.men.filter((m) => m.status === "active");
+      assignSelect.innerHTML = `<option value="">Select delivery man…</option>` +
+        activeMen.map((m) => {
+          const code = m.code ? `${m.code} — ` : "";
+          const area = m.area ? ` (${m.area})` : "";
+          return `<option value="${m.id}">${escapeHtml(code + m.name + area)}</option>`;
+        }).join("");
+
+      if (activeMen.length === 0) {
+        assignSelect.innerHTML = `<option value="">No active delivery men — add one first</option>`;
+      }
+    }
+
+    function closeAssignModal() {
+      assignModal.classList.remove("is-open");
+      assignModal.setAttribute("aria-hidden", "true");
+      document.body.classList.remove("no-scroll");
+      state.assigningOrderId = null;
+    }
+
+    assignCancel.addEventListener("click", closeAssignModal);
+    assignClose.addEventListener("click", closeAssignModal);
+    assignModal.addEventListener("click", (e) => { if (e.target === assignModal) closeAssignModal(); });
+
+    assignConfirm.addEventListener("click", async () => {
+      const manId = assignSelect.value;
+      if (!manId) {
+        toast.warning("Please select a delivery man.");
+        return;
+      }
+
+      const order = state.orders.find((o) => o.id === state.assigningOrderId);
+      const man = state.men.find((m) => m.id === manId);
+      if (!order || !man) return;
+
+      assignConfirm.disabled = true;
+      const labelEl = assignConfirm.querySelector(".btn-label");
+      const original = labelEl.textContent;
+      labelEl.textContent = "Assigning…";
+
+      try {
+        // Update order: deliveryManId, deliveryManName, delivery.status="Assigned", order.status="Assigned"
+        await updateDocument("orders", order.id, {
+          "delivery.deliveryManId": manId,
+          "delivery.deliveryManCode": man.code || null,
+          "delivery.deliveryManName": man.name || null,
+          "delivery.deliveryManPhone": man.phone || null,
+          "delivery.status": "Assigned",
+          "delivery.assignedAt": new Date(),
+          "status": "Assigned",
+          // Denormalized for quick display
+          deliveryManId: manId,
+          deliveryManName: man.name || null,
+        });
+
+        // Update local
+        order.delivery = order.delivery || {};
+        order.delivery.deliveryManId = manId;
+        order.delivery.deliveryManName = man.name;
+        order.delivery.deliveryManPhone = man.phone;
+        order.delivery.status = "Assigned";
+        order.deliveryManId = manId;
+        order.deliveryManName = man.name;
+        order.status = "Assigned";
+
+        // Update man stats
+        const newAssigned = (man.stats?.totalAssigned || 0) + 1;
+        await updateDocument("deliveryMen", manId, {
+          "stats.totalAssigned": newAssigned,
+        });
+        man.stats = man.stats || {};
+        man.stats.totalAssigned = newAssigned;
+
+        cacheClear("q:orders");
+        cacheClear("q:deliveryMen");
+
+        closeAssignModal();
+        renderPending();
+        computeSummary();
+        toast.success(`Assigned to ${man.name}`);
+      } catch (err) {
+        console.error("Assign failed:", err);
+        toast.error("Failed to assign delivery man.");
+      } finally {
+        assignConfirm.disabled = false;
+        labelEl.textContent = original;
+      }
+    });
+
+    /* ════════════════════════════════════════════════════
+       DELIVER MODAL
+       ════════════════════════════════════════════════════ */
+    const deliverModal = document.getElementById("deliver-modal");
+    const deliverModalSub = document.getElementById("deliver-modal-sub");
+    const deliverCustomerName = document.getElementById("deliver-customer-name");
+    const deliverCustomerPhone = document.getElementById("deliver-customer-phone");
+    const deliverCustomerAddress = document.getElementById("deliver-customer-address");
+    const deliverItemsEl = document.getElementById("deliver-items");
+    const deliverSubtotalEl = document.getElementById("deliver-subtotal");
+    const deliverDiscountEl = document.getElementById("deliver-discount");
+    const deliverDeliveryEl = document.getElementById("deliver-delivery");
+    const deliverTotalEl = document.getElementById("deliver-total");
+    const deliverPaidInput = document.getElementById("deliver-paid");
+    const deliverMethodSel = document.getElementById("deliver-method");
+    const deliverDueEl = document.getElementById("deliver-due");
+    const deliverNoteInput = document.getElementById("deliver-note");
+    const deliverConfirm = document.getElementById("deliver-confirm");
+    const deliverCancel = document.getElementById("deliver-cancel");
+    const deliverClose = document.getElementById("deliver-modal-close");
+
+    function openDeliverModal(orderId) {
+      const order = state.orders.find((o) => o.id === orderId);
+      if (!order) return;
+
+      state.deliverOrder = order;
+      state.deliverItems = (order.items || []).map((item, index) => ({
+        index,
+        productId: item.productId,
+        name: item.name || "—",
+        qty: Number(item.quantity) || 0,
+        price: Number(item.price) || 0,
+        deliveredQty: Number(item.quantity) || 0,   // Default full
+      }));
+
+      // Populate customer
+      deliverModalSub.textContent = order.orderCode || order.id.slice(0, 8);
+      deliverCustomerName.textContent = order.customer?.name || "—";
+      deliverCustomerPhone.textContent = order.customer?.phone || "—";
+      deliverCustomerAddress.textContent = order.customer?.address || "—";
+
+      // Prefill paid = original payment paid amount
+      deliverPaidInput.value = order.payment?.paid || 0;
+      deliverMethodSel.value = order.payment?.method || "Cash";
+      deliverNoteInput.value = "";
+
+      // Store discount & delivery charge for calc
+      state._orderDiscount = Number(order.discount) || 0;
+      state._orderDelivery = Number(order.deliveryCharge) || 0;
+
+      // Render items
+      renderDeliverItems();
+      recalcDeliver();
+
+      // Wire paid input
+      deliverPaidInput.addEventListener("input", recalcDeliver);
+
+      deliverModal.classList.add("is-open");
+      deliverModal.setAttribute("aria-hidden", "false");
+      document.body.classList.add("no-scroll");
+    }
+
+    function renderDeliverItems() {
+      if (state.deliverItems.length === 0) {
+        deliverItemsEl.innerHTML = `<p class="text-sm text-slate-500 italic">No items in this order.</p>`;
+        return;
+      }
+
+      deliverItemsEl.innerHTML = state.deliverItems.map((item) => `
+        <div class="p-3 rounded-lg border border-slate-200 bg-white" data-index="${item.index}">
+          <div class="flex items-start justify-between gap-3 mb-2">
+            <div class="min-w-0">
+              <p class="text-sm font-medium text-slate-900 truncate">${escapeHtml(item.name)}</p>
+              <p class="text-xs text-slate-500">Ordered: ${item.qty} × ${formatCurrency(item.price)}</p>
+            </div>
+            <span class="text-sm font-semibold text-slate-900 whitespace-nowrap" data-role="line-total">${formatCurrency(item.deliveredQty * item.price)}</span>
+          </div>
+
+          <div class="flex items-center justify-between gap-2">
+            <label class="text-xs text-slate-600">Delivered qty</label>
+            <div class="flex items-center gap-1">
+              <button type="button" class="deliver-qty-minus w-7 h-7 inline-flex items-center justify-center rounded-md border border-slate-300 text-slate-600 hover:bg-slate-100" data-index="${item.index}">
+                <svg xmlns="http://www.w3.org/2000/svg" class="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="3">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M5 12h14" />
+                </svg>
+              </button>
+              <input type="number" min="0" max="${item.qty}" step="1" value="${item.deliveredQty}"
+                     class="deliver-qty-input w-14 h-7 text-center text-sm font-semibold rounded-md border border-slate-300
+                            focus:outline-none focus:ring-1 focus:ring-brand-500 focus:border-brand-500"
+                     data-index="${item.index}" />
+              <button type="button" class="deliver-qty-plus w-7 h-7 inline-flex items-center justify-center rounded-md border border-slate-300 text-slate-600 hover:bg-slate-100" data-index="${item.index}">
+                <svg xmlns="http://www.w3.org/2000/svg" class="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="3">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M12 5v14M5 12h14" />
+                </svg>
+              </button>
+            </div>
+          </div>
+
+          ${item.deliveredQty < item.qty ? `
+            <p class="text-xs text-amber-600 mt-2">⚠ Short by ${item.qty - item.deliveredQty} item${item.qty - item.deliveredQty > 1 ? "s" : ""}</p>
+          ` : ""}
+        </div>
+      `).join("");
+
+      // Wire events
+      deliverItemsEl.querySelectorAll(".deliver-qty-input").forEach((input) => {
+        input.addEventListener("input", () => {
+          const idx = Number(input.dataset.index);
+          const item = state.deliverItems[idx];
+          const v = Math.max(0, Math.min(item.qty, parseInt(input.value, 10) || 0));
+          item.deliveredQty = v;
+          renderDeliverItems();
+          recalcDeliver();
+        });
+      });
+
+      deliverItemsEl.querySelectorAll(".deliver-qty-minus").forEach((btn) => {
+        btn.addEventListener("click", () => {
+          const idx = Number(btn.dataset.index);
+          const item = state.deliverItems[idx];
+          item.deliveredQty = Math.max(0, item.deliveredQty - 1);
+          renderDeliverItems();
+          recalcDeliver();
+        });
+      });
+
+      deliverItemsEl.querySelectorAll(".deliver-qty-plus").forEach((btn) => {
+        btn.addEventListener("click", () => {
+          const idx = Number(btn.dataset.index);
+          const item = state.deliverItems[idx];
+          item.deliveredQty = Math.min(item.qty, item.deliveredQty + 1);
+          renderDeliverItems();
+          recalcDeliver();
+        });
+      });
+    }
+
+    function recalcDeliver() {
+      const subtotal = state.deliverItems.reduce((s, it) => s + it.deliveredQty * it.price, 0);
+      const discount = state._orderDiscount || 0;
+      const delivery = state._orderDelivery || 0;
+      const total = Math.max(0, subtotal - discount + delivery);
+      const paid = Math.max(0, Number(deliverPaidInput.value) || 0);
+      const due = Math.max(0, total - paid);
+
+      deliverSubtotalEl.textContent = formatCurrency(subtotal);
+      deliverDiscountEl.textContent = formatCurrency(discount);
+      deliverDeliveryEl.textContent = formatCurrency(delivery);
+      deliverTotalEl.textContent = formatCurrency(total);
+      deliverDueEl.textContent = formatCurrency(due);
+      deliverDueEl.className = `font-bold ${due > 0 ? "text-red-700" : "text-green-700"}`;
+    }
+
+    function closeDeliverModal() {
+      deliverModal.classList.remove("is-open");
+      deliverModal.setAttribute("aria-hidden", "true");
+      document.body.classList.remove("no-scroll");
+      state.deliverOrder = null;
+      state.deliverItems = [];
+    }
+
+    deliverCancel.addEventListener("click", closeDeliverModal);
+    deliverClose.addEventListener("click", closeDeliverModal);
+    deliverModal.addEventListener("click", (e) => { if (e.target === deliverModal) closeDeliverModal(); });
+
+    deliverConfirm.addEventListener("click", async () => {
+      if (!state.deliverOrder) return;
+
+      const order = state.deliverOrder;
+      const subtotal = state.deliverItems.reduce((s, it) => s + it.deliveredQty * it.price, 0);
+      const discount = state._orderDiscount || 0;
+      const delivery = state._orderDelivery || 0;
+      const total = Math.max(0, subtotal - discount + delivery);
+      const paid = Math.max(0, Number(deliverPaidInput.value) || 0);
+      const due = Math.max(0, total - paid);
+      const method = deliverMethodSel.value;
+      const note = deliverNoteInput.value.trim();
+
+      // Validation
+      if (paid > total) {
+        toast.warning(`Paid cannot exceed total (${formatCurrency(total)}).`);
+        return;
+      }
+
+      const paymentStatus = paid >= total ? "Paid" : paid > 0 ? "Partial" : "Unpaid";
+
+      deliverConfirm.disabled = true;
+      const labelEl = deliverConfirm.querySelector(".btn-label");
+      const original = labelEl.textContent;
+      labelEl.textContent = "Delivering…";
+
+      try {
+        // Update order: delivery status = Delivered, payment updated
+        const deliveredItems = state.deliverItems.map((it) => {
+          const original = order.items[it.index] || {};
+          return {
+            ...original,
+            deliveredQty: it.deliveredQty,
+            deliveredTotal: it.deliveredQty * it.price,
+          };
+        });
+
+        await updateDocument("orders", order.id, {
+          "delivery.status": "Delivered",
+          "delivery.deliveredAt": new Date(),
+          "delivery.collectedAmount": paid,
+          "delivery.paymentMethod": method,
+          "delivery.note": note || null,
+          "status": "Delivered",
+          // Payment snapshot
+          "payment.paid": paid,
+          "payment.due": due,
+          "payment.method": method,
+          "payment.status": paymentStatus,
+          // Delivered items
+          items: deliveredItems,
+        });
+
+        // Create a transaction record
+        const txnCode = "TXN-" + Date.now().toString(36).toUpperCase().slice(-6);
+        await createDocument("transactions", {
+          code: txnCode,
+          shopId: order.shopId,
+          shopCode: order.shopCode,
+          shopName: order.shopName,
+          orderId: order.id,
+          orderCode: order.orderCode,
+          type: "payment",
+          amount: paid,
+          method,
+          note: note || "Delivery payment",
+          orderPaidAfter: paid,
+          orderDueAfter: due,
+          createdBy: currentUser.uid,
+        });
+
+        // Update delivery man stats
+        if (order.deliveryManId) {
+          const man = state.men.find((m) => m.id === order.deliveryManId);
+          if (man) {
+            const newDelivered = (man.stats?.totalDelivered || 0) + 1;
+            const newCollected = (man.stats?.totalCollected || 0) + paid;
+            await updateDocument("deliveryMen", order.deliveryManId, {
+              "stats.totalDelivered": newDelivered,
+              "stats.totalCollected": newCollected,
+            });
+          }
+        }
+
+        // Update local
+        order.delivery = order.delivery || {};
+        order.delivery.status = "Delivered";
+        order.delivery.collectedAmount = paid;
+        order.status = "Delivered";
+        order.payment = order.payment || {};
+        order.payment.paid = paid;
+        order.payment.due = due;
+        order.payment.status = paymentStatus;
+
+        cacheClear("q:orders");
+        cacheClear("q:transactions");
+        cacheClear("q:deliveryMen");
+
+        closeDeliverModal();
+        renderPending();
+        computeSummary();
+        toast.success(`Order ${order.orderCode || ""} delivered — ${formatCurrency(paid)} collected`);
+      } catch (err) {
+        console.error("Deliver failed:", err);
+        toast.error("Failed to mark as delivered.");
+      } finally {
+        deliverConfirm.disabled = false;
+        labelEl.textContent = original;
+      }
+    });
+
+    /* ════════════════════════════════════════════════════
+       ADD/EDIT DELIVERY MAN MODAL
+       ════════════════════════════════════════════════════ */
+    const deliveryModal = document.getElementById("delivery-modal");
+    const deliveryModalForm = document.getElementById("delivery-modal-form");
+    const deliveryModalTitle = document.getElementById("delivery-modal-title");
+    const deliveryModalSub = document.getElementById("delivery-modal-sub");
+    const modalName = document.getElementById("modal-name");
+    const modalPhone = document.getElementById("modal-phone");
+    const modalAltPhone = document.getElementById("modal-alt-phone");
+    const modalAddress = document.getElementById("modal-address");
+    const modalArea = document.getElementById("modal-area");
+    const modalDistrict = document.getElementById("modal-district");
+    const modalVehicle = document.getElementById("modal-vehicle");
+    const modalVehicleNum = document.getElementById("modal-vehicle-num");
+    const modalSaveBtn = document.getElementById("delivery-modal-save");
+    const modalCancelBtn = document.getElementById("delivery-modal-cancel");
+    const modalCloseBtn = document.getElementById("delivery-modal-close");
+
+    function openDeliveryModal(mode = "add", man = null) {
+      state.editingManId = mode === "edit" ? man.id : null;
+
+      deliveryModalForm.reset();
+      [modalName, modalPhone, modalAddress].forEach(clearFieldError);
+
+      if (mode === "edit" && man) {
+        deliveryModalTitle.textContent = "Edit Delivery Man";
+        deliveryModalSub.textContent = man.code || "";
+        modalName.value = man.name || "";
+        modalPhone.value = man.phone || "";
+        modalAltPhone.value = man.altPhone || "";
+        modalAddress.value = man.address || "";
+        modalArea.value = man.area || "";
+        modalDistrict.value = man.district || "";
+        modalVehicle.value = man.vehicleType || "Motorcycle";
+        modalVehicleNum.value = man.vehicleNumber || "";
+        const radio = deliveryModalForm.querySelector(`input[name="status"][value="${man.status || "active"}"]`);
+        if (radio) radio.checked = true;
+        modalSaveBtn.querySelector(".save-label").textContent = "Update";
+      } else {
+        deliveryModalTitle.textContent = "Add Delivery Man";
+        deliveryModalSub.textContent = "Code auto-generates (DLV-00001).";
+        modalSaveBtn.querySelector(".save-label").textContent = "Save";
+      }
+
+      deliveryModal.classList.add("is-open");
+      deliveryModal.setAttribute("aria-hidden", "false");
+      document.body.classList.add("no-scroll");
+      setTimeout(() => modalName.focus(), 80);
+    }
+
+    function closeDeliveryModal() {
+      deliveryModal.classList.remove("is-open");
+      deliveryModal.setAttribute("aria-hidden", "true");
+      document.body.classList.remove("no-scroll");
+      state.editingManId = null;
+    }
+
+    addDeliveryBtn.addEventListener("click", () => openDeliveryModal("add"));
+    emptyAddBtn.addEventListener("click", () => openDeliveryModal("add"));
+    modalCancelBtn.addEventListener("click", closeDeliveryModal);
+    modalCloseBtn.addEventListener("click", closeDeliveryModal);
+    deliveryModal.addEventListener("click", (e) => { if (e.target === deliveryModal) closeDeliveryModal(); });
+
+    [modalName, modalPhone, modalAddress].forEach((input) => {
+      input.addEventListener("input", () => clearFieldError(input));
+    });
+
+    modalSaveBtn.addEventListener("click", async () => {
+      const name = modalName.value.trim();
+      const phone = modalPhone.value.trim();
+      const altPhone = modalAltPhone.value.trim();
+      const address = modalAddress.value.trim();
+      const area = modalArea.value.trim();
+      const district = modalDistrict.value.trim();
+      const vehicleType = modalVehicle.value;
+      const vehicleNumber = modalVehicleNum.value.trim();
+      const statusRadio = deliveryModalForm.querySelector('input[name="status"]:checked');
+      const status = statusRadio ? statusRadio.value : "active";
+
+      let hasError = false;
+      if (!name) { setFieldError(modalName, "Name required."); hasError = true; }
+      if (!phone) { setFieldError(modalPhone, "Phone required."); hasError = true; }
+      else if (!isValidPhone(phone)) { setFieldError(modalPhone, "Invalid phone."); hasError = true; }
+      if (hasError) { modalName.focus(); return; }
+
+      modalSaveBtn.disabled = true;
+      const labelEl = modalSaveBtn.querySelector(".save-label");
+      const originalLabel = labelEl.textContent;
+      labelEl.textContent = state.editingManId ? "Updating…" : "Saving…";
+
+      try {
+        if (state.editingManId) {
+          await updateDeliveryManAtomic(state.editingManId, {
+            name, phone, altPhone, address, area, district,
+            vehicleType, vehicleNumber, status,
+          });
+          toast.success(`"${name}" updated.`);
+        } else {
+          const { code } = await createDeliveryManAtomic({
+            name, phone, altPhone, address, area, district,
+            vehicleType, vehicleNumber, status,
+          }, currentUser.uid);
+          toast.success(`"${name}" created — ${code}`);
+        }
+        cacheClear("q:deliveryMen");
+        closeDeliveryModal();
+        await loadDeliveryMen({ reset: true });
+      } catch (err) {
+        console.error("Save failed:", err);
+        toast.error("Failed to save.");
+      } finally {
+        modalSaveBtn.disabled = false;
+        labelEl.textContent = originalLabel;
+      }
+    });
+
+    deliveryModalForm.addEventListener("submit", (e) => { e.preventDefault(); modalSaveBtn.click(); });
+
+    /* ════════════════════════════════════════════════════
+       DELEGATED CLICKS
+       ════════════════════════════════════════════════════ */
+    document.addEventListener("click", (e) => {
+      // Assign
+      const assignBtn = e.target.closest(".assign-btn");
+      if (assignBtn) {
+        openAssignModal(assignBtn.dataset.id);
+        return;
+      }
+      // Deliver
+      const deliverBtn = e.target.closest(".deliver-btn");
+      if (deliverBtn) {
+        openDeliverModal(deliverBtn.dataset.id);
+        return;
+      }
+      // Edit man
+      const manEditBtn = e.target.closest(".man-edit-btn");
+      if (manEditBtn) {
+        const man = state.men.find((m) => m.id === manEditBtn.dataset.id);
+        if (man) openDeliveryModal("edit", man);
+        return;
+      }
+    });
+
+    /* ════════════════════════════════════════════════════
+       FILTERS
+       ════════════════════════════════════════════════════ */
+    searchInput.addEventListener("input", debounce(() => {
+      state.search = searchInput.value.trim();
+      if (state.tab === "pending") renderPending();
+      else renderMen();
+    }, 200));
+
+    statusFilter.addEventListener("change", () => {
+      if (state.tab === "pending") renderPending();
+      else loadDeliveryMen({ reset: true });
+    });
+
+    pendingLoadBtn?.addEventListener("click", () => {
+      const label = pendingLoadBtn.querySelector(".btn-label");
+      pendingLoadBtn.disabled = true;
+      label.textContent = "Loading…";
+      loadPendingOrders().finally(() => {
+        pendingLoadBtn.disabled = false;
+        label.textContent = "Load more";
+      });
+    });
+
+    loadMoreBtn.addEventListener("click", () => {
+      const label = loadMoreBtn.querySelector(".btn-label");
+      loadMoreBtn.disabled = true;
+      label.textContent = "Loading…";
+      loadDeliveryMen().finally(() => {
+        loadMoreBtn.disabled = false;
+        label.textContent = "Load more";
+      });
+    });
+
+    refreshBtn.addEventListener("click", () => {
+      cacheClear("q:orders");
+      cacheClear("q:deliveryMen");
+      if (state.tab === "pending") loadPendingOrders({ reset: true });
+      else loadDeliveryMen({ reset: true });
+      toast.info("Refreshed");
+    });
+
+    /* ─── BOOTSTRAP ───────────────────────────────────── */
+    (async function init() {
+      // Load both in parallel
+      await Promise.all([
+        loadPendingOrders({ reset: true }),
+        loadDeliveryMen({ reset: true }),
+      ]);
+      switchTab("pending");
+    })();
+
+    function capitalize(s) { return s ? s.charAt(0).toUpperCase() + s.slice(1) : ""; }
+  </script>
+</body>
+</html>

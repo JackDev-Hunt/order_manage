@@ -24,7 +24,6 @@
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="../assets/css/style.css" />
 
-  <!-- ─── Modal styles ─── -->
   <style>
     .modal-backdrop {
       position: fixed; inset: 0; z-index: 100;
@@ -49,11 +48,171 @@
         animation: modalFadeScale 0.22s cubic-bezier(0.16, 1, 0.3, 1);
       }
     }
+    .modal-panel-wide { max-width: 900px !important; }
     @keyframes modalSlideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
     @keyframes modalFadeScale { from { opacity: 0; transform: scale(0.96); } to { opacity: 1; transform: scale(1); } }
     @keyframes modalBackdropFade { from { opacity: 0; } to { opacity: 1; } }
     .modal-grab { width: 40px; height: 4px; border-radius: 9999px; background: #cbd5e1; margin: 8px auto 0; }
     @media (min-width: 640px) { .modal-grab { display: none; } }
+
+    /* ═══════════════════════════════════════════════════
+       INVOICE STYLES
+       ═══════════════════════════════════════════════════ */
+    .invoice-container {
+      background: #fff;
+      padding: 24px;
+      font-family: 'Inter', system-ui, sans-serif;
+      color: #0f172a;
+      font-size: 13px;
+      line-height: 1.5;
+    }
+    .invoice-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      border-bottom: 2px solid #0f172a;
+      padding-bottom: 16px;
+      margin-bottom: 20px;
+      gap: 16px;
+    }
+    .invoice-shop-name {
+      font-size: 22px;
+      font-weight: 700;
+      margin: 0 0 4px 0;
+      color: #0f172a;
+    }
+    .invoice-shop-info {
+      font-size: 12px;
+      color: #475569;
+      line-height: 1.6;
+    }
+    .invoice-title {
+      font-size: 26px;
+      font-weight: 700;
+      color: #2563eb;
+      margin: 0;
+      text-transform: uppercase;
+      letter-spacing: 2px;
+    }
+    .invoice-meta {
+      text-align: right;
+      font-size: 12px;
+      color: #475569;
+      margin-top: 8px;
+    }
+    .invoice-customer {
+      background: #f8fafc;
+      border-left: 3px solid #2563eb;
+      padding: 12px 16px;
+      margin-bottom: 20px;
+    }
+    .invoice-customer-label {
+      font-size: 10px;
+      font-weight: 700;
+      color: #2563eb;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      margin-bottom: 6px;
+    }
+    .invoice-customer-name {
+      font-size: 15px;
+      font-weight: 600;
+      margin-bottom: 2px;
+    }
+    .invoice-customer-detail {
+      font-size: 12px;
+      color: #475569;
+    }
+    .invoice-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-bottom: 16px;
+    }
+    .invoice-table thead th {
+      background: #0f172a;
+      color: #fff;
+      font-size: 10px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      padding: 10px 8px;
+      text-align: left;
+    }
+    .invoice-table thead th.text-right { text-align: right; }
+    .invoice-table thead th.text-center { text-align: center; }
+    .invoice-table tbody td {
+      padding: 8px;
+      border-bottom: 1px solid #e2e8f0;
+      font-size: 12px;
+    }
+    .invoice-table tbody td.text-right { text-align: right; }
+    .invoice-table tbody td.text-center { text-align: center; }
+    .invoice-totals {
+      width: 60%;
+      margin-left: auto;
+      font-size: 13px;
+    }
+    .invoice-totals tr td {
+      padding: 4px 0;
+    }
+    .invoice-totals tr td:last-child { text-align: right; font-weight: 500; }
+    .invoice-totals .grand-row td {
+      border-top: 2px solid #0f172a;
+      padding-top: 8px;
+      font-size: 16px;
+      font-weight: 700;
+    }
+    .invoice-amount-words {
+      background: #f1f5f9;
+      padding: 10px 12px;
+      border-radius: 4px;
+      font-size: 12px;
+      font-style: italic;
+      margin: 16px 0;
+      border-left: 3px solid #2563eb;
+    }
+    .invoice-signatures {
+      display: flex;
+      justify-content: space-between;
+      margin-top: 60px;
+      padding-top: 8px;
+    }
+    .invoice-signature-box {
+      width: 40%;
+      text-align: center;
+      border-top: 1px solid #0f172a;
+      padding-top: 6px;
+      font-size: 11px;
+      color: #475569;
+    }
+    .invoice-footer {
+      margin-top: 30px;
+      padding-top: 12px;
+      border-top: 1px solid #e2e8f0;
+      text-align: center;
+      font-size: 10px;
+      color: #94a3b8;
+    }
+
+    /* Print styles */
+    @media print {
+      body * { visibility: hidden; }
+      #invoice-print-area, #invoice-print-area * { visibility: visible; }
+      #invoice-print-area {
+        position: absolute;
+        left: 0;
+        top: 0;
+        width: 100%;
+        padding: 0;
+        margin: 0;
+        background: #fff;
+      }
+      .no-print { display: none !important; }
+      @page {
+        size: A4;
+        margin: 12mm;
+      }
+    }
   </style>
 </head>
 
@@ -130,8 +289,8 @@
 
       <p class="px-3 pt-5 pb-1.5 text-[10px] font-semibold uppercase tracking-wider text-slate-400">Manage</p>
       <ul class="space-y-0.5">
-        <li><a href="customers.html" class="nav-link relative flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-slate-700 hover:bg-slate-100">
-          <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M17 20h5v-2a4 4 0 00-3-3.87M9 20H4v-2a4 4 0 013-3.87m6-5.13a4 4 0 11-8 0 4 4 0 018 0zm6 3a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
+        <li><a href="shops.html" class="nav-link relative flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-slate-700 hover:bg-slate-100">
+          <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M3 9l1.5-5h15L21 9m-1 0v11a1 1 0 01-1 1h-4v-7H9v7H5a1 1 0 01-1-1V9m16 0H3" /></svg>
           <span>Customers</span></a></li>
         <li><a href="products.html" class="nav-link relative flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-slate-700 hover:bg-slate-100">
           <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" /></svg>
@@ -329,19 +488,15 @@
                   <th class="text-right">Actions</th>
                 </tr>
               </thead>
-              <tbody id="orders-tbody">
-                <!-- rows injected by JS -->
-              </tbody>
+              <tbody id="orders-tbody"></tbody>
             </table>
           </div>
         </div>
 
         <!-- Mobile cards -->
-        <div class="orders-cards divide-y divide-slate-100" id="orders-cards">
-          <!-- cards injected by JS -->
-        </div>
+        <div class="orders-cards divide-y divide-slate-100" id="orders-cards"></div>
 
-        <!-- Empty / status area -->
+        <!-- Empty -->
         <div id="orders-empty" class="hidden p-8 sm:p-12 text-center">
           <div class="inline-flex items-center justify-center w-12 h-12 rounded-full bg-slate-100 text-slate-400 mb-3">
             <svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
@@ -370,7 +525,7 @@
         </div>
       </div>
 
-      <!-- Stats footer -->
+      <!-- Stats -->
       <div class="mt-4 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-slate-500">
         <span>Showing <span id="shown-count" class="font-medium text-slate-700">0</span> orders</span>
         <span class="w-1 h-1 rounded-full bg-slate-300"></span>
@@ -411,11 +566,17 @@
         </button>
       </div>
 
-      <div id="order-modal-body" class="px-5 sm:px-6 py-4 overflow-y-auto flex-1">
-        <!-- Injected by JS -->
-      </div>
+      <div id="order-modal-body" class="px-5 sm:px-6 py-4 overflow-y-auto flex-1"></div>
 
       <div class="flex items-center justify-end gap-2 px-5 sm:px-6 py-4 border-t border-slate-100">
+        <button type="button" id="order-modal-invoice"
+                class="inline-flex items-center justify-center gap-2 px-3 py-2 rounded-lg
+                       bg-brand-600 hover:bg-brand-700 text-white text-sm font-medium">
+          <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+          </svg>
+          Invoice
+        </button>
         <button type="button" id="order-modal-delete"
                 class="inline-flex items-center justify-center gap-2 px-3 py-2 rounded-lg
                        border border-red-300 text-red-600 hover:bg-red-50 text-sm font-medium">
@@ -460,6 +621,49 @@
                        bg-red-600 hover:bg-red-700 text-white text-sm font-medium
                        disabled:opacity-60 disabled:cursor-not-allowed">
           <span class="btn-label">Delete</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════════════════════
+       INVOICE MODAL
+       ══════════════════════════════════════════════════════ -->
+  <div id="invoice-modal" class="modal-backdrop" role="dialog" aria-modal="true"
+       aria-labelledby="invoice-modal-title" aria-hidden="true">
+    <div class="modal-panel modal-panel-wide" role="document">
+      <div class="modal-grab no-print"></div>
+
+      <div class="flex items-start justify-between gap-3 px-5 sm:px-6 pt-4 sm:pb-3 border-b border-slate-100 no-print">
+        <div class="min-w-0">
+          <h2 id="invoice-modal-title" class="text-base sm:text-lg font-semibold text-slate-900">Invoice Preview</h2>
+          <p id="invoice-modal-sub" class="text-xs text-slate-500 mt-0.5">—</p>
+        </div>
+        <button type="button" id="invoice-modal-close"
+                class="shrink-0 inline-flex items-center justify-center w-9 h-9 rounded-lg
+                       text-slate-400 hover:bg-slate-100 hover:text-slate-600"
+                aria-label="Close">
+          <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+          </svg>
+        </button>
+      </div>
+
+      <div id="invoice-modal-body" class="overflow-y-auto flex-1 bg-slate-100 p-4"></div>
+
+      <div class="flex items-center justify-end gap-2 px-5 sm:px-6 py-4 border-t border-slate-100 no-print">
+        <button type="button" id="invoice-cancel"
+                class="inline-flex items-center justify-center px-4 py-2 rounded-lg
+                       bg-slate-100 text-slate-700 hover:bg-slate-200 text-sm font-medium">
+          Close
+        </button>
+        <button type="button" id="invoice-print-btn"
+                class="inline-flex items-center justify-center gap-2 px-4 py-2 rounded-lg
+                       bg-brand-600 hover:bg-brand-700 text-white text-sm font-medium">
+          <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4H7v4a2 2 0 002 2zM7 9V5a2 2 0 012-2h6a2 2 0 012 2v4" />
+          </svg>
+          Print Invoice
         </button>
       </div>
     </div>
@@ -521,7 +725,6 @@
     overlay.addEventListener("click", closeSidebar);
     sidebar.querySelectorAll("a.nav-link").forEach((a) => a.addEventListener("click", () => { if (innerWidth < 1024) closeSidebar(); }));
 
-    // Active link
     const currentPage = location.pathname.split("/").pop() || "orders.html";
     sidebar.querySelector(`a[href="${currentPage}"]`)?.classList.add("active");
 
@@ -533,13 +736,13 @@
     profileBtn.addEventListener("click", (e) => { e.stopPropagation(); profileMenu.classList.contains("hidden") ? openProfile() : closeProfile(); });
     document.addEventListener("click", (e) => { if (!profileMenu.contains(e.target) && !profileBtn.contains(e.target)) closeProfile(); });
 
-    // Global ESC
     document.addEventListener("keydown", (e) => {
       if (e.key === "Escape") {
         closeSidebar();
         closeProfile();
         if (orderModal.classList.contains("is-open")) closeOrderModal();
         if (confirmModal.classList.contains("is-open")) closeConfirmModal();
+        if (invoiceModal.classList.contains("is-open")) closeInvoiceModal();
       }
     });
 
@@ -672,7 +875,7 @@
       const q = state.search.toLowerCase().trim();
       return items.filter((o) => {
         const haystack = [
-          o.orderId, o.shopName,
+          o.orderCode, o.orderId, o.shopName, o.shopCode,
           o.customer?.name, o.customer?.phone, o.customer?.address,
         ].filter(Boolean).join(" ").toLowerCase();
         return haystack.includes(q);
@@ -704,7 +907,7 @@
 
     /* ─── ROW TEMPLATE ────────────────────────────────── */
     function renderRow(o) {
-      const id = escapeHtml(o.orderId || o.id.slice(0, 8));
+      const id = escapeHtml(o.orderCode || o.orderId || o.id.slice(0, 8));
       const shop = escapeHtml(o.shopName || "—");
       const name = escapeHtml(o.customer?.name || "—");
       const phone = escapeHtml(o.customer?.phone || "");
@@ -728,11 +931,20 @@
           <td>${statusBadge(status)}</td>
           <td class="text-xs text-slate-500">${date}</td>
           <td class="text-right">
-            <button class="order-view-btn inline-flex items-center gap-1 px-2.5 py-1.5 rounded-md text-xs font-medium
-                          text-slate-700 hover:bg-slate-100 border border-slate-200"
-                    data-id="${o.id}">
-              View
-            </button>
+            <div class="inline-flex items-center gap-1">
+              <button class="order-view-btn inline-flex items-center gap-1 px-2.5 py-1.5 rounded-md text-xs font-medium
+                            text-slate-700 hover:bg-slate-100 border border-slate-200"
+                      data-id="${o.id}" title="View details">
+                View
+              </button>
+              <button class="order-invoice-btn inline-flex items-center justify-center w-8 h-8 rounded-md
+                            text-brand-600 hover:bg-brand-50 border border-brand-200"
+                      data-id="${o.id}" title="Print invoice" aria-label="Print invoice">
+                <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                </svg>
+              </button>
+            </div>
           </td>
         </tr>
       `;
@@ -740,7 +952,7 @@
 
     /* ─── CARD TEMPLATE (mobile) ──────────────────────── */
     function renderCard(o) {
-      const id = escapeHtml(o.orderId || o.id.slice(0, 8));
+      const id = escapeHtml(o.orderCode || o.orderId || o.id.slice(0, 8));
       const shop = escapeHtml(o.shopName || "");
       const name = escapeHtml(o.customer?.name || "—");
       const phone = escapeHtml(o.customer?.phone || "");
@@ -768,14 +980,65 @@
           </div>
           <div class="flex items-center justify-between gap-2">
             ${paymentBadge(payStatus)}
-            <button class="order-view-btn inline-flex items-center gap-1 px-3 py-1.5 rounded-md text-xs font-medium
-                          text-slate-700 hover:bg-slate-100 border border-slate-200"
-                    data-id="${o.id}">
-              View details
-            </button>
+            <div class="flex items-center gap-1">
+              <button class="order-view-btn inline-flex items-center gap-1 px-3 py-1.5 rounded-md text-xs font-medium
+                            text-slate-700 hover:bg-slate-100 border border-slate-200"
+                      data-id="${o.id}">
+                View
+              </button>
+              <button class="order-invoice-btn inline-flex items-center justify-center w-8 h-8 rounded-md
+                            text-brand-600 hover:bg-brand-50 border border-brand-200"
+                      data-id="${o.id}" aria-label="Print invoice">
+                <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                </svg>
+              </button>
+            </div>
           </div>
         </div>
       `;
+    }
+
+    /* ════════════════════════════════════════════════════
+       NUMBER TO WORDS (Bangladeshi numbering)
+       ════════════════════════════════════════════════════ */
+    function numberToWords(num) {
+      const n = Math.floor(Number(num) || 0);
+      if (n === 0) return "Zero Taka Only";
+
+      const ones = ["", "One", "Two", "Three", "Four", "Five", "Six", "Seven", "Eight", "Nine",
+                    "Ten", "Eleven", "Twelve", "Thirteen", "Fourteen", "Fifteen", "Sixteen",
+                    "Seventeen", "Eighteen", "Nineteen"];
+      const tens = ["", "", "Twenty", "Thirty", "Forty", "Fifty", "Sixty", "Seventy", "Eighty", "Ninety"];
+
+      function twoDigits(x) {
+        if (x < 20) return ones[x];
+        return tens[Math.floor(x / 10)] + (x % 10 ? " " + ones[x % 10] : "");
+      }
+
+      function threeDigits(x) {
+        if (x < 100) return twoDigits(x);
+        return ones[Math.floor(x / 100)] + " Hundred" + (x % 100 ? " " + twoDigits(x % 100) : "");
+      }
+
+      // Indian/Bangladeshi system: crore, lakh, thousand, hundred
+      let words = "";
+      let remainder = n;
+
+      const crore = Math.floor(remainder / 10000000);
+      remainder %= 10000000;
+      const lakh = Math.floor(remainder / 100000);
+      remainder %= 100000;
+      const thousand = Math.floor(remainder / 1000);
+      remainder %= 1000;
+      const hundreds = remainder;
+
+      if (crore > 0) words += twoDigits(crore) + " Crore ";
+      if (lakh > 0) words += twoDigits(lakh) + " Lakh ";
+      if (thousand > 0) words += twoDigits(thousand) + " Thousand ";
+      if (hundreds > 0) words += threeDigits(hundreds);
+
+      return words.trim() + " Taka Only";
     }
 
     /* ════════════════════════════════════════════════════
@@ -787,11 +1050,13 @@
     const orderModalSub = document.getElementById("order-modal-subtitle");
 
     let currentOrderId = null;
+    let currentOrderData = null;
 
     function openOrderModal(order) {
       currentOrderId = order.id;
-      orderModalTitle.textContent = order.orderId || order.id.slice(0, 8);
-      orderModalSub.textContent = order.shopName ? `Shop: ${order.shopName}` : "";
+      currentOrderData = order;
+      orderModalTitle.textContent = order.orderCode || order.orderId || order.id.slice(0, 8);
+      orderModalSub.textContent = order.shopName ? `Customer: ${order.shopName}` : "";
       orderModalBody.innerHTML = renderOrderDetails(order);
       orderModal.classList.add("is-open");
       orderModal.setAttribute("aria-hidden", "false");
@@ -803,6 +1068,7 @@
       orderModal.setAttribute("aria-hidden", "true");
       document.body.classList.remove("no-scroll");
       currentOrderId = null;
+      currentOrderData = null;
     }
 
     function renderOrderDetails(o) {
@@ -810,13 +1076,11 @@
       const itemsTotal = items.reduce((s, it) => s + (Number(it.total) || 0), 0);
 
       return `
-        <!-- Status row -->
         <div class="flex items-center flex-wrap gap-2 mb-4">
           ${statusBadge(o.status || "Pending")}
           ${paymentBadge(o.payment?.status || "Unpaid")}
         </div>
 
-        <!-- Customer -->
         <div class="bg-slate-50 rounded-lg p-3 mb-3">
           <p class="text-[11px] font-semibold uppercase tracking-wide text-slate-500 mb-1.5">Customer</p>
           <p class="text-sm font-medium text-slate-900">${escapeHtml(o.customer?.name || "—")}</p>
@@ -825,7 +1089,6 @@
           ${o.customer?.area || o.customer?.district ? `<p class="text-xs text-slate-500 mt-0.5">${escapeHtml([o.customer?.area, o.customer?.district].filter(Boolean).join(", "))}</p>` : ""}
         </div>
 
-        <!-- Items -->
         <p class="text-[11px] font-semibold uppercase tracking-wide text-slate-500 mb-2">Products (${items.length})</p>
         <div class="space-y-2 mb-4">
           ${items.length === 0
@@ -842,7 +1105,6 @@
           }
         </div>
 
-        <!-- Totals -->
         <div class="bg-slate-50 rounded-lg p-3 space-y-1.5 text-sm">
           <div class="flex justify-between">
             <span class="text-slate-600">Subtotal</span>
@@ -861,7 +1123,7 @@
             <span class="text-brand-700 font-bold">${formatCurrency(o.grandTotal || 0)}</span>
           </div>
           <div class="flex justify-between">
-            <span class="text-slate-600">Paid (${escapeHtml(o.payment?.method || "Cash")})</span>
+            <span class="text-slate-600">Paid (${escapeHtml(o.payment?.method || "—")})</span>
             <span class="text-green-600 font-medium">${formatCurrency(o.payment?.paid || 0)}</span>
           </div>
           <div class="flex justify-between">
@@ -870,7 +1132,6 @@
           </div>
         </div>
 
-        <!-- Notes -->
         ${o.customerNote || o.internalNote ? `
           <div class="mt-3 space-y-2">
             ${o.customerNote ? `
@@ -888,17 +1149,183 @@
           </div>
         ` : ""}
 
-        <!-- Meta -->
         <p class="text-[11px] text-slate-400 mt-4">
           Created ${o.createdAt ? formatDate(o.createdAt, true) : "—"}
         </p>
       `;
     }
 
-    // Close order modal buttons
     document.getElementById("order-modal-close").addEventListener("click", closeOrderModal);
     document.getElementById("order-modal-done").addEventListener("click", closeOrderModal);
     orderModal.addEventListener("click", (e) => { if (e.target === orderModal) closeOrderModal(); });
+
+    // Invoice button from order details
+    document.getElementById("order-modal-invoice").addEventListener("click", () => {
+      if (!currentOrderData) return;
+      closeOrderModal();
+      openInvoiceModal(currentOrderData);
+    });
+
+    /* ════════════════════════════════════════════════════
+       INVOICE MODAL
+       ════════════════════════════════════════════════════ */
+    const invoiceModal     = document.getElementById("invoice-modal");
+    const invoiceModalBody = document.getElementById("invoice-modal-body");
+    const invoiceModalSub  = document.getElementById("invoice-modal-sub");
+
+    function openInvoiceModal(order) {
+      invoiceModalSub.textContent = `${order.orderCode || order.id.slice(0, 8)} — ${formatDate(order.createdAt || new Date())}`;
+      invoiceModalBody.innerHTML = renderInvoice(order);
+      invoiceModal.classList.add("is-open");
+      invoiceModal.setAttribute("aria-hidden", "false");
+      document.body.classList.add("no-scroll");
+    }
+
+    function closeInvoiceModal() {
+      invoiceModal.classList.remove("is-open");
+      invoiceModal.setAttribute("aria-hidden", "true");
+      document.body.classList.remove("no-scroll");
+    }
+
+    function renderInvoice(o) {
+      const items = o.items || [];
+      const grandTotal = Number(o.grandTotal) || 0;
+      const amountWords = numberToWords(grandTotal);
+
+      // Header info — the shop (customer) name we're selling TO
+      const customerName = o.shopName || o.customer?.customerName || o.customer?.name || "—";
+      const customerCode = o.shopCode || o.customer?.customerCode || "";
+      const customerAddress = o.customer?.address || "—";
+      const customerPhone = o.customer?.phone || "";
+
+      // Issued-by: our business
+      const businessName = "Your Business Name";
+      const businessAddress = "Business Address Line, City";
+      const businessPhone = "+880 1XXX-XXXXXX";
+
+      const invoiceNo = o.orderCode || o.orderId || o.id.slice(0, 8).toUpperCase();
+      const invoiceDate = o.createdAt ? formatDate(o.createdAt) : formatDate(new Date());
+
+      return `
+        <div id="invoice-print-area" class="invoice-container">
+          <!-- Header -->
+          <div class="invoice-header">
+            <div>
+              <h1 class="invoice-shop-name">${escapeHtml(businessName)}</h1>
+              <div class="invoice-shop-info">
+                ${escapeHtml(businessAddress)}<br>
+                Phone: ${escapeHtml(businessPhone)}
+              </div>
+            </div>
+            <div>
+              <h2 class="invoice-title">Invoice</h2>
+              <div class="invoice-meta">
+                <div><strong>Invoice #:</strong> ${escapeHtml(invoiceNo)}</div>
+                <div><strong>Date:</strong> ${invoiceDate}</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Customer / Bill To -->
+          <div class="invoice-customer">
+            <div class="invoice-customer-label">Bill To</div>
+            <div class="invoice-customer-name">
+              ${escapeHtml(customerName)}
+              ${customerCode ? `<span style="color:#64748b;font-weight:400;font-size:12px;"> (${escapeHtml(customerCode)})</span>` : ""}
+            </div>
+            <div class="invoice-customer-detail">
+              ${escapeHtml(customerAddress)}
+              ${customerPhone ? `<br>Phone: ${escapeHtml(customerPhone)}` : ""}
+            </div>
+          </div>
+
+          <!-- Items table -->
+          <table class="invoice-table">
+            <thead>
+              <tr>
+                <th style="width:40px;">#</th>
+                <th>Product</th>
+                <th class="text-center" style="width:60px;">Qty</th>
+                <th class="text-right" style="width:100px;">Unit Price</th>
+                <th class="text-right" style="width:110px;">Total</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${items.length === 0 ? `
+                <tr><td colspan="5" class="text-center" style="padding:20px;color:#94a3b8;">No items</td></tr>
+              ` : items.map((it, i) => `
+                <tr>
+                  <td>${i + 1}</td>
+                  <td>${escapeHtml(it.name || "—")}</td>
+                  <td class="text-center">${it.quantity || 0}</td>
+                  <td class="text-right">${formatCurrency(it.price || 0)}</td>
+                  <td class="text-right">${formatCurrency(it.total || 0)}</td>
+                </tr>
+              `).join("")}
+            </tbody>
+          </table>
+
+          <!-- Totals -->
+          <table class="invoice-totals">
+            <tr>
+              <td>Subtotal</td>
+              <td>${formatCurrency(o.subtotal || 0)}</td>
+            </tr>
+            <tr>
+              <td>Discount</td>
+              <td>-${formatCurrency(o.discount || 0)}</td>
+            </tr>
+            <tr>
+              <td>Delivery Charge</td>
+              <td>+${formatCurrency(o.deliveryCharge || 0)}</td>
+            </tr>
+            <tr class="grand-row">
+              <td>Grand Total</td>
+              <td>${formatCurrency(grandTotal)}</td>
+            </tr>
+            <tr>
+              <td>Paid</td>
+              <td>${formatCurrency(o.payment?.paid || 0)}</td>
+            </tr>
+            <tr>
+              <td>Due</td>
+              <td>${formatCurrency(o.payment?.due || 0)}</td>
+            </tr>
+          </table>
+
+          <!-- Amount in words -->
+          <div class="invoice-amount-words">
+            <strong>In Words:</strong> ${escapeHtml(amountWords)}
+          </div>
+
+          <!-- Notes -->
+          ${o.customerNote ? `
+            <div style="font-size:11px;color:#475569;margin-bottom:8px;">
+              <strong>Note:</strong> ${escapeHtml(o.customerNote)}
+            </div>
+          ` : ""}
+
+          <!-- Signatures -->
+          <div class="invoice-signatures">
+            <div class="invoice-signature-box">Customer Signature</div>
+            <div class="invoice-signature-box">Authorized Signature</div>
+          </div>
+
+          <!-- Footer -->
+          <div class="invoice-footer">
+            This is a computer-generated invoice. Thank you for your business!
+          </div>
+        </div>
+      `;
+    }
+
+    document.getElementById("invoice-modal-close").addEventListener("click", closeInvoiceModal);
+    document.getElementById("invoice-cancel").addEventListener("click", closeInvoiceModal);
+    invoiceModal.addEventListener("click", (e) => { if (e.target === invoiceModal) closeInvoiceModal(); });
+
+    document.getElementById("invoice-print-btn").addEventListener("click", () => {
+      window.print();
+    });
 
     /* ════════════════════════════════════════════════════
        CONFIRM DELETE MODAL
@@ -936,10 +1363,9 @@
         await deleteDocument("orders", currentOrderId);
         cacheClear("q:orders");
 
-        // Remove from local state
         state.items = state.items.filter((o) => o.id !== currentOrderId);
         render();
-        updateSidebarCount(true); // force refresh
+        updateSidebarCount(true);
 
         closeConfirmModal();
         closeOrderModal();
@@ -953,16 +1379,23 @@
       }
     });
 
-    /* ─── DELEGATED CLICK (view buttons) ──────────────── */
+    /* ─── DELEGATED CLICK ─────────────────────────────── */
     document.addEventListener("click", (e) => {
-      const btn = e.target.closest(".order-view-btn");
-      if (!btn) return;
-      const id = btn.dataset.id;
-      const order = state.items.find((o) => o.id === id);
-      if (order) openOrderModal(order);
+      const viewBtn = e.target.closest(".order-view-btn");
+      if (viewBtn) {
+        const order = state.items.find((o) => o.id === viewBtn.dataset.id);
+        if (order) openOrderModal(order);
+        return;
+      }
+      const invoiceBtn = e.target.closest(".order-invoice-btn");
+      if (invoiceBtn) {
+        const order = state.items.find((o) => o.id === invoiceBtn.dataset.id);
+        if (order) openInvoiceModal(order);
+        return;
+      }
     });
 
-    /* ─── FILTER EVENT HANDLERS ───────────────────────── */
+    /* ─── FILTERS ─────────────────────────────────────── */
     searchInput.addEventListener("input", debounce(() => {
       state.search = searchInput.value.trim();
       render();
@@ -1028,7 +1461,6 @@
       }
     })();
 
-    /* ─── HELPERS ─────────────────────────────────────── */
     function capitalize(s) { return s ? s.charAt(0).toUpperCase() + s.slice(1) : ""; }
   </script>
 </body>

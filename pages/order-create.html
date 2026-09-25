@@ -54,56 +54,66 @@
     .modal-grab { width: 40px; height: 4px; border-radius: 9999px; background: #cbd5e1; margin: 8px auto 0; }
     @media (min-width: 640px) { .modal-grab { display: none; } }
 
-    /* ─── Quantity control ─── */
+    /* Quantity control */
     .qty-control {
-      display: inline-flex;
-      align-items: stretch;
-      border: 1px solid #cbd5e1;
-      border-radius: 8px;
-      overflow: hidden;
-      background: #fff;
+      display: inline-flex; align-items: stretch;
+      border: 1px solid #cbd5e1; border-radius: 8px;
+      overflow: hidden; background: #fff;
     }
     .qty-control input {
-      border: 0;
-      text-align: center;
-      width: 52px;
-      min-height: 38px;
-      padding: 0;
-      font-size: 14px;
-      font-weight: 600;
-      outline: 0;
-      background: transparent;
-      -moz-appearance: textfield;
-      color: #0f172a;
+      border: 0; text-align: center; width: 52px;
+      min-height: 38px; padding: 0; font-size: 14px; font-weight: 600;
+      outline: 0; background: transparent; -moz-appearance: textfield; color: #0f172a;
     }
     .qty-control input::-webkit-outer-spin-button,
     .qty-control input::-webkit-inner-spin-button {
-      -webkit-appearance: none;
-      margin: 0;
+      -webkit-appearance: none; margin: 0;
     }
     .qty-btn {
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      width: 34px;
-      min-height: 38px;
-      border: 0;
-      background: #f1f5f9;
-      color: #334155;
-      cursor: pointer;
+      display: inline-flex; align-items: center; justify-content: center;
+      width: 34px; min-height: 38px; border: 0; background: #f1f5f9;
+      color: #334155; cursor: pointer;
       transition: background-color 0.15s ease;
-      font-weight: 700;
-      font-size: 16px;
-      line-height: 1;
+      font-weight: 700; font-size: 16px; line-height: 1;
     }
     .qty-btn:hover { background: #e2e8f0; }
     .qty-btn:active { background: #cbd5e1; }
-    .qty-btn:disabled { opacity: 0.35; cursor: not-allowed; }
     .qty-btn svg { width: 14px; height: 14px; }
     @media (min-width: 640px) {
       .qty-control input { min-height: 34px; }
       .qty-btn { min-height: 34px; }
     }
+
+    /* Summary Table (border-free) */
+    .summary-table {
+      width: 100%;
+      font-size: 12px;
+      border-collapse: collapse;
+    }
+    .summary-table thead th {
+      text-align: left;
+      font-weight: 600;
+      font-size: 10px;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: #94a3b8;
+      padding: 0 0 6px 0;
+    }
+    .summary-table thead th:last-child { text-align: right; }
+    .summary-table tbody td {
+      padding: 4px 0;
+      color: #475569;
+      vertical-align: top;
+    }
+    .summary-table tbody td:last-child { text-align: right; color: #0f172a; font-weight: 500; }
+    .summary-table .cell-name {
+      max-width: 130px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    .summary-table .cell-qty { text-align: center; width: 40px; }
+    .summary-table .cell-price { text-align: right; width: 75px; }
   </style>
 </head>
 
@@ -288,7 +298,6 @@
                 <p class="text-xs text-slate-500 mt-1.5" id="customer-hint">Select a customer or add a new one.</p>
               </div>
 
-              <!-- Selected customer preview -->
               <div id="customer-preview" class="hidden mt-4 p-3 rounded-lg bg-slate-50 border border-slate-100">
                 <p class="text-[11px] font-semibold uppercase tracking-wide text-slate-500 mb-2">Selected customer</p>
                 <div class="space-y-1">
@@ -311,16 +320,13 @@
                   <span class="inline-flex items-center justify-center w-5 h-5 rounded-full bg-brand-100 text-brand-700 text-[10px] font-bold">2</span>
                   Products
                 </h3>
-                <button type="button" id="add-product-row"
-                        class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-brand-50 text-brand-700
-                               text-xs font-semibold hover:bg-brand-100">
-                  <svg xmlns="http://www.w3.org/2000/svg" class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
-                    <path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4" /></svg>
-                  Add product
-                </button>
+                <span id="product-count-badge" class="hidden text-xs font-medium text-slate-500 bg-slate-100 px-2 py-0.5 rounded-full">
+                  0 items
+                </span>
               </div>
 
-              <div class="hidden md:grid grid-cols-12 gap-2 px-3 py-2 text-[11px] font-semibold uppercase tracking-wider text-slate-500 bg-slate-50 rounded-lg mb-1">
+              <!-- Desktop column headers -->
+              <div class="hidden md:grid grid-cols-12 gap-2 px-3 py-2 text-[11px] font-semibold uppercase tracking-wider text-slate-500 bg-slate-50 rounded-lg mb-2">
                 <div class="col-span-4">Product</div>
                 <div class="col-span-3">Quantity</div>
                 <div class="col-span-2">Unit Price</div>
@@ -328,10 +334,25 @@
                 <div class="col-span-1 text-right">Remove</div>
               </div>
 
+              <!-- Product rows container -->
               <div id="product-rows" class="space-y-2"></div>
 
-              <p class="text-xs text-slate-500 mt-3">
-                Select a product — price auto-fills. Adjust quantity with − / +.
+              <!-- Add Product Button — Bottom, full-width, prominent -->
+              <button type="button" id="add-product-row"
+                      class="mt-4 w-full inline-flex items-center justify-center gap-2 px-4 py-3 rounded-lg
+                             border-2 border-dashed border-brand-300 bg-brand-50/50 text-brand-700
+                             font-semibold text-sm
+                             hover:bg-brand-50 hover:border-brand-400 active:bg-brand-100
+                             focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:ring-offset-2
+                             transition-colors">
+                <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4" />
+                </svg>
+                <span>Add Product</span>
+              </button>
+
+              <p class="text-xs text-slate-500 mt-2 text-center">
+                Add multiple products to this order. Each product can be added once.
               </p>
             </section>
 
@@ -364,10 +385,27 @@
             <div class="lg:sticky lg:top-20 space-y-4">
 
               <div class="bg-white rounded-xl border border-slate-200 p-4 sm:p-5">
-                <h3 class="text-sm font-semibold text-slate-900 mb-3">Order Summary</h3>
+                <h3 class="text-sm font-semibold text-slate-900 mb-3">Invoice Summary</h3>
 
-                <div id="summary-items" class="space-y-1.5 text-sm mb-3 max-h-40 overflow-y-auto">
-                  <p class="text-slate-400 text-xs">No products added yet.</p>
+                <!-- Product Table (border-free) -->
+                <div id="summary-items-table" class="mb-4">
+                  <table class="summary-table">
+                    <thead>
+                      <tr>
+                        <th>Product</th>
+                        <th class="text-center">Qty</th>
+                        <th class="text-right">Price</th>
+                        <th class="text-right">Total</th>
+                      </tr>
+                    </thead>
+                    <tbody id="summary-tbody">
+                      <tr>
+                        <td colspan="4" class="text-center py-3 text-slate-400 text-xs">
+                          No products added yet
+                        </td>
+                      </tr>
+                    </tbody>
+                  </table>
                 </div>
 
                 <hr class="border-slate-100" />
@@ -394,37 +432,17 @@
                 <hr class="border-slate-100 my-3" />
 
                 <div class="flex items-center justify-between">
-                  <span class="text-sm font-semibold text-slate-900">Grand Total</span>
+                  <span class="text-sm font-semibold text-slate-900">Invoice Total</span>
                   <span class="text-lg font-bold text-brand-700" id="sum-grand">৳0.00</span>
                 </div>
 
-                <hr class="border-slate-100 my-3" />
-
-                <div class="space-y-3">
-                  <div>
-                    <label for="payment-method" class="block text-xs font-medium text-slate-600 mb-1">Payment method</label>
-                    <select id="payment-method" name="paymentMethod"
-                            class="w-full px-3 py-2 rounded-lg border border-slate-300 text-sm bg-white
-                                   focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-brand-500">
-                      <option value="Cash">Cash</option>
-                      <option value="bKash">bKash</option>
-                      <option value="Nagad">Nagad</option>
-                      <option value="Bank">Bank</option>
-                      <option value="Other">Other</option>
-                    </select>
-                  </div>
-
-                  <div>
-                    <label for="paid-input" class="block text-xs font-medium text-slate-600 mb-1">Paid amount (৳)</label>
-                    <input type="number" id="paid-input" name="paidAmount" min="0" step="0.01" value="0"
-                           class="w-full px-3 py-2 rounded-lg border border-slate-300 text-sm text-right
-                                  focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-brand-500" />
-                  </div>
-
-                  <div class="flex items-center justify-between text-sm">
-                    <span class="text-slate-600">Due</span>
-                    <span class="font-semibold text-red-600" id="sum-due">৳0.00</span>
-                  </div>
+                <div class="mt-3 p-3 rounded-lg bg-amber-50 border border-amber-100">
+                  <p class="text-xs text-amber-800 flex items-start gap-1.5">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                      <path stroke-linecap="round" stroke-linejoin="round" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                    <span>No payment collected at order time. Full amount will be collected during delivery.</span>
+                  </p>
                 </div>
 
                 <hr class="border-slate-100 my-3" />
@@ -449,7 +467,7 @@
                   <span class="btn-label">Create Order</span>
                 </button>
                 <p class="text-[11px] text-slate-500 text-center mt-2">
-                  Order will be saved to Firestore.
+                  Order will be saved with invoice value only.
                 </p>
               </div>
             </div>
@@ -465,9 +483,7 @@
     </footer>
   </div>
 
-  <!-- ══════════════════════════════════════════════════════
-       ADD CUSTOMER MODAL
-       ══════════════════════════════════════════════════════ -->
+  <!-- ADD CUSTOMER MODAL -->
   <div id="shop-modal" class="modal-backdrop" role="dialog" aria-modal="true"
        aria-labelledby="shop-modal-title" aria-hidden="true">
     <div class="modal-panel" role="document">
@@ -662,13 +678,11 @@
     const addCustomerBtn = document.getElementById("add-customer-btn");
     const productRowsEl = document.getElementById("product-rows");
     const addProductRowBtn = document.getElementById("add-product-row");
-    const summaryItemsEl = document.getElementById("summary-items");
+    const summaryTbody = document.getElementById("summary-tbody");
     const sumSubtotal = document.getElementById("sum-subtotal");
     const sumGrand = document.getElementById("sum-grand");
-    const sumDue = document.getElementById("sum-due");
     const discountInput = document.getElementById("discount-input");
     const deliveryInput = document.getElementById("delivery-input");
-    const paidInput = document.getElementById("paid-input");
     const submitBtn = document.getElementById("submit-btn");
 
     /* Customer preview refs */
@@ -766,28 +780,13 @@
       document.body.classList.add("no-scroll");
 
       setTimeout(() => modalShopName.focus(), 80);
-      document.addEventListener("keydown", trapFocus);
     }
 
     function closeShopModal() {
       shopModal.classList.remove("is-open");
       shopModal.setAttribute("aria-hidden", "true");
       document.body.classList.remove("no-scroll");
-      document.removeEventListener("keydown", trapFocus);
       if (lastFocusedEl && typeof lastFocusedEl.focus === "function") lastFocusedEl.focus();
-    }
-
-    function trapFocus(e) {
-      if (e.key !== "Tab") return;
-      const focusables = shopModal.querySelectorAll(
-        'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
-      );
-      const list = Array.from(focusables).filter((el) => !el.disabled);
-      if (list.length === 0) return;
-      const first = list[0];
-      const last = list[list.length - 1];
-      if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last.focus(); }
-      else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus(); }
     }
 
     addCustomerBtn.addEventListener("click", openShopModal);
@@ -860,6 +859,15 @@
         toast.warning("No products available. Add products first.");
         return;
       }
+      // Check if all products are already added
+      const usedIds = new Set(state.rows.map((r) => r.productId).filter(Boolean));
+      const availableCount = state.products.filter((p) => !usedIds.has(p.id)).length;
+
+      if (availableCount === 0) {
+        toast.warning("All products are already added to this order.");
+        return;
+      }
+
       const rowId = ++state.rowCounter;
       state.rows.push({ rowId, productId: "", quantity: 1, unitPrice: 0 });
       renderProductRows();
@@ -875,9 +883,21 @@
     function updateRow(rowId, patch) {
       const row = state.rows.find((r) => r.rowId === rowId);
       if (!row) return;
+
+      // Duplicate check
+      if (patch.productId !== undefined && patch.productId) {
+        const duplicate = state.rows.find(
+          (r) => r.rowId !== rowId && r.productId === patch.productId
+        );
+        if (duplicate) {
+          toast.warning("This product is already added. Please select a different one.");
+          return;
+        }
+      }
+
       Object.assign(row, patch);
 
-      // ⭐ Auto-fill unit price when product changes
+      // Auto-fill unit price when product changes
       if (patch.productId !== undefined) {
         const prod = state.products.find((p) => p.id === patch.productId);
         row.unitPrice = prod ? Number(prod.sellingPrice) || 0 : 0;
@@ -887,7 +907,6 @@
       renderSummary();
     }
 
-    /* ─── Increase / Decrease Qty ─────────────────────── */
     function changeQty(rowId, delta) {
       const row = state.rows.find((r) => r.rowId === rowId);
       if (!row) return;
@@ -895,18 +914,31 @@
       updateRow(rowId, { quantity: newQty });
     }
 
+    function updateProductCountBadge() {
+      const badge = document.getElementById("product-count-badge");
+      if (!badge) return;
+      const count = state.rows.length;
+      if (count > 0) {
+        badge.textContent = `${count} item${count > 1 ? "s" : ""}`;
+        badge.classList.remove("hidden");
+      } else {
+        badge.classList.add("hidden");
+      }
+    }
+
     function renderProductRows() {
       if (state.rows.length === 0) {
         productRowsEl.innerHTML = `
-          <div class="text-center py-6 border-2 border-dashed border-slate-200 rounded-lg">
-            <p class="text-sm text-slate-500">No products added yet.</p>
-            <button type="button" id="empty-add-product"
-                    class="mt-2 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-brand-50 text-brand-700
-                           text-xs font-semibold hover:bg-brand-100">
-              + Add your first product
-            </button>
+          <div class="text-center py-8 border-2 border-dashed border-slate-200 rounded-lg">
+            <div class="inline-flex items-center justify-center w-12 h-12 rounded-full bg-slate-100 text-slate-400 mb-3">
+              <svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
+              </svg>
+            </div>
+            <p class="text-sm font-medium text-slate-700">No products added yet</p>
+            <p class="text-xs text-slate-500 mt-0.5">Click "Add Product" button below to get started.</p>
           </div>`;
-        document.getElementById("empty-add-product")?.addEventListener("click", addProductRow);
+        updateProductCountBadge();
         return;
       }
 
@@ -925,22 +957,32 @@
         });
         rowEl.querySelector(".qty-minus")?.addEventListener("click", () => changeQty(row.rowId, -1));
         rowEl.querySelector(".qty-plus")?.addEventListener("click", () => changeQty(row.rowId, +1));
-        rowEl.querySelector(".row-price")?.addEventListener("input", (e) => {
-          const v = Math.max(0, parseFloat(e.target.value) || 0);
-          updateRow(row.rowId, { unitPrice: v });
-        });
         rowEl.querySelector(".row-remove")?.addEventListener("click", () => removeProductRow(row.rowId));
       });
+
+      updateProductCountBadge();
     }
 
     function renderProductRow(row) {
+      // Get list of already-selected product IDs (excluding current row)
+      const usedProductIds = new Set(
+        state.rows
+          .filter((r) => r.rowId !== row.rowId && r.productId)
+          .map((r) => r.productId)
+      );
+
+      // Build options with disabled state for already-used products
       const options = [`<option value="">Select product…</option>`]
         .concat(state.products.map((p) => {
-          const selected = p.id === row.productId ? "selected" : "";
+          const isSelected = p.id === row.productId;
+          const isUsedElsewhere = usedProductIds.has(p.id);
+          const disabled = !isSelected && isUsedElsewhere ? "disabled" : "";
+          const selected = isSelected ? "selected" : "";
           const code = p.code ? `[${p.code}] ` : "";
           const stock = p.stock != null ? ` — ${p.stock} ${p.unit || "pcs"}` : "";
-          const label = `${code}${p.name}${stock}`;
-          return `<option value="${p.id}" ${selected}>${escapeHtml(label)}</option>`;
+          const usedTag = isUsedElsewhere && !isSelected ? " (already added)" : "";
+          const label = `${code}${p.name}${stock}${usedTag}`;
+          return `<option value="${p.id}" ${selected} ${disabled}>${escapeHtml(label)}</option>`;
         })).join("");
 
       const lineTotal = (Number(row.quantity) || 0) * (Number(row.unitPrice) || 0);
@@ -960,7 +1002,7 @@
             </select>
           </div>
 
-          <!-- Qty with +/- buttons -->
+          <!-- Qty -->
           <div class="col-span-6 md:col-span-3">
             <label class="md:hidden block text-[10px] font-medium text-slate-500 uppercase mb-1">Quantity</label>
             <div class="qty-control">
@@ -978,7 +1020,7 @@
             </div>
           </div>
 
-          <!-- Unit price — READONLY, auto from product -->
+          <!-- Unit price -->
           <div class="col-span-6 md:col-span-2">
             <label class="md:hidden block text-[10px] font-medium text-slate-500 uppercase mb-1">Unit price</label>
             <input type="number" min="0" step="0.01" value="${row.unitPrice || 0}"
@@ -1021,42 +1063,45 @@
 
       const discount = Math.max(0, Number(discountInput.value) || 0);
       const delivery = Math.max(0, Number(deliveryInput.value) || 0);
-      const paid = Math.max(0, Number(paidInput.value) || 0);
-
       const grand = Math.max(0, subtotal - discount + delivery);
-      const due = Math.max(0, grand - paid);
 
-      return { subtotal, discount, delivery, paid, grand, due };
+      return { subtotal, discount, delivery, grand };
     }
 
     function renderSummary() {
-      const { subtotal, grand, due } = calculate();
+      const { subtotal, grand } = calculate();
 
       if (state.rows.length === 0) {
-        summaryItemsEl.innerHTML = `<p class="text-slate-400 text-xs">No products added yet.</p>`;
+        summaryTbody.innerHTML = `
+          <tr>
+            <td colspan="4" class="text-center py-3 text-slate-400 text-xs">
+              No products added yet
+            </td>
+          </tr>
+        `;
       } else {
-        summaryItemsEl.innerHTML = state.rows.map((r) => {
+        summaryTbody.innerHTML = state.rows.map((r) => {
           const prod = state.products.find((p) => p.id === r.productId);
           const name = prod ? prod.name : "—";
-          const lineTotal = (Number(r.quantity) || 0) * (Number(r.unitPrice) || 0);
+          const qty = Number(r.quantity) || 0;
+          const price = Number(r.unitPrice) || 0;
+          const lineTotal = qty * price;
+
           return `
-            <div class="flex items-start justify-between gap-2 text-xs">
-              <div class="min-w-0">
-                <p class="text-slate-700 truncate">${escapeHtml(name)}</p>
-                <p class="text-slate-400">${r.quantity} × ${formatCurrency(r.unitPrice || 0)}</p>
-              </div>
-              <span class="font-medium text-slate-700 whitespace-nowrap">${formatCurrency(lineTotal)}</span>
-            </div>
+            <tr>
+              <td class="cell-name" title="${escapeHtml(name)}">${escapeHtml(name)}</td>
+              <td class="cell-qty">${qty}</td>
+              <td class="cell-price">${formatCurrency(price)}</td>
+              <td>${formatCurrency(lineTotal)}</td>
+            </tr>
           `;
         }).join("");
       }
 
       sumSubtotal.textContent = formatCurrency(subtotal);
       sumGrand.textContent = formatCurrency(grand);
-      sumDue.textContent = formatCurrency(due);
-      sumDue.className = `font-semibold ${due > 0 ? "text-red-600" : "text-green-600"}`;
 
-      // Update per-row line total (avoid full re-render)
+      // Update per-row line total
       state.rows.forEach((r) => {
         const el = productRowsEl.querySelector(`[data-row-id="${r.rowId}"] .row-line-total`);
         if (el) {
@@ -1066,7 +1111,7 @@
       });
     }
 
-    [discountInput, deliveryInput, paidInput].forEach((inp) => inp.addEventListener("input", renderSummary));
+    [discountInput, deliveryInput].forEach((inp) => inp.addEventListener("input", renderSummary));
 
     /* ════════════════════════════════════════════════════
        VALIDATION
@@ -1091,17 +1136,11 @@
         }
       }
 
-      const { grand, paid } = calculate();
-      if (paid > grand) {
-        setFieldError(paidInput, `Paid cannot exceed grand total (${formatCurrency(grand)}).`);
-        ok = false;
-      }
-
       return ok;
     }
 
     /* ════════════════════════════════════════════════════
-       SUBMIT ORDER
+       SUBMIT ORDER — No payment at create
        ════════════════════════════════════════════════════ */
     form.addEventListener("submit", async (e) => {
       e.preventDefault();
@@ -1141,9 +1180,9 @@
         };
       });
 
-      const { subtotal, discount, delivery, paid, grand } = calculate();
-      const paymentMethod = document.getElementById("payment-method").value;
+      const { subtotal, discount, delivery, grand } = calculate();
 
+      // Order payload: NO payment section (empty placeholder)
       const orderPayload = {
         customer,
         items,
@@ -1151,6 +1190,12 @@
         discount,
         deliveryCharge: delivery,
         grandTotal: grand,
+        payment: {
+          paid: 0,
+          due: grand,
+          method: null,
+          status: "Unpaid",
+        },
         delivery: { deliveryManId: null, status: "Pending" },
         status: document.getElementById("status-select").value,
         customerNote: document.getElementById("customer-note").value.trim() || null,
@@ -1165,8 +1210,8 @@
         const { orderCode } = await createOrderAtomic(orderPayload, {
           uid: currentUser.uid,
           shopId,
-          paidAmount: paid,
-          paymentMethod,
+          paidAmount: 0,
+          paymentMethod: null,
         });
 
         cacheClear("q:orders");

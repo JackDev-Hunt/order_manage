@@ -1,10 +1,10 @@
 // assets/js/firebase/firestore.js
 // ─────────────────────────────────────────────────────────────
 // Firestore data layer
-// - Generic CRUD helpers
+// - Generic CRUD helpers (single-source timestamps)
 // - Cached queries (30s TTL)
-// - Atomic sequential Shop Code (SHP-00001)
-// - Random codes for orders/transactions
+// - Sequential codes: SHP / PRD / DLV
+// - Random codes: ORD / TXN
 // - Atomic order + payment + shop-stats writes
 // ─────────────────────────────────────────────────────────────
 
@@ -54,6 +54,8 @@ export {
 
 /* ═══════════════════════════════════════════════════════
    GENERIC CRUD
+   NOTE: These helpers own the createdAt/updatedAt timestamps.
+   Do NOT add them in the payload — pass business fields only.
    ═══════════════════════════════════════════════════════ */
 
 export async function createDocument(collectionName, data) {
@@ -152,19 +154,11 @@ export function subscribeCollection(collectionName, opts = {}, callback) {
 }
 
 /* ═══════════════════════════════════════════════════════
-   SHOP CODE GENERATOR — Sequential (SHP-00001)
+   SEQUENTIAL CODE GENERATORS
    ═══════════════════════════════════════════════════════ */
 
-/**
- * Generate the next sequential shop code atomically.
- * Format: SHP-00001, SHP-00002, ...
- * Uses a single counter document: counters/shopCounter
- *
- * @returns {Promise<string>} e.g. "SHP-00001"
- */
-export async function generateShopCode() {
-  const counterRef = doc(db, "counters", "shopCounter");
-
+async function generateSequentialCode(counterName, prefix) {
+  const counterRef = doc(db, "counters", counterName);
   const nextValue = await runTransaction(db, async (txn) => {
     const snap = await txn.get(counterRef);
     const current = snap.exists() ? snap.data().value || 0 : 0;
@@ -172,20 +166,19 @@ export async function generateShopCode() {
     txn.set(counterRef, { value: next }, { merge: true });
     return next;
   });
-
-  return `SHP-${String(nextValue).padStart(5, "0")}`;
+  return `${prefix}-${String(nextValue).padStart(5, "0")}`;
 }
 
+export const generateShopCode     = () => generateSequentialCode("shopCounter", "SHP");
+export const generateProductCode  = () => generateSequentialCode("productCounter", "PRD");
+export const generateDeliveryCode = () => generateSequentialCode("deliveryCode", "DLV");
+
 /* ═══════════════════════════════════════════════════════
-   RANDOM CODE GENERATOR — for orders/transactions
+   RANDOM CODE GENERATOR — orders/transactions
    ═══════════════════════════════════════════════════════ */
 
-/**
- * Generate a random code like "ORD-X7K2M9" (6 chars).
- * No counters needed — practically zero collision.
- */
 export function generateRandomCode(prefix, length = 6) {
-  const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"; // no I/O/0/1/L
+  const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
   let code = "";
   for (let i = 0; i < length; i++) {
     code += chars[Math.floor(Math.random() * chars.length)];
@@ -194,31 +187,15 @@ export function generateRandomCode(prefix, length = 6) {
 }
 
 /* ═══════════════════════════════════════════════════════
-   CREATE SHOP — atomic with unique code
+   SHOP — create / update
    ═══════════════════════════════════════════════════════ */
 
-/**
- * Create a new shop with sequential code SHP-00001.
- * Everything (code generation + shop write) is atomic.
- *
- * @param {object} shopData
- * @param {string} shopData.name
- * @param {string} shopData.ownerName
- * @param {string} shopData.ownerPhone
- * @param {string} [shopData.ownerAltPhone]
- * @param {string} shopData.address
- * @param {string} [shopData.area]
- * @param {string} [shopData.district]
- * @param {string} uid - creator
- * @returns {Promise<{ shopId: string, code: string, shop: object }>}
- */
 export async function createShopAtomic(shopData, uid) {
   if (!shopData?.name) throw new Error("shop-name-required");
 
-  // 1. Generate code atomically
   const code = await generateShopCode();
 
-  // 2. Create shop doc
+  // ⚠️ Only business fields — timestamps added by createDocument()
   const payload = {
     code,
     name: shopData.name.trim(),
@@ -237,21 +214,122 @@ export async function createShopAtomic(shopData, uid) {
       lastOrderAt: null,
     },
     createdBy: uid,
-    createdAt: serverTimestamp(),
-    updatedAt: serverTimestamp(),
   };
 
   const { id } = await createDocument("shops", payload);
+  return { shopId: id, code, shop: { id, ...payload } };
+}
 
-  return {
-    shopId: id,
-    code,
-    shop: { id, ...payload },
+export async function updateShopAtomic(shopId, data) {
+  const payload = {
+    name: data.name?.trim(),
+    ownerName: data.ownerName?.trim() || null,
+    ownerPhone: data.ownerPhone?.trim() || null,
+    ownerAltPhone: data.ownerAltPhone?.trim() || null,
+    address: data.address?.trim() || null,
+    area: data.area?.trim() || null,
+    district: data.district?.trim() || null,
   };
+  await updateDocument("shops", shopId, payload);
 }
 
 /* ═══════════════════════════════════════════════════════
-   ATOMIC ORDER CREATE (uses shop.code, random order code)
+   PRODUCT — create / update
+   ═══════════════════════════════════════════════════════ */
+
+export async function createProductAtomic(productData, uid) {
+  if (!productData?.name) throw new Error("product-name-required");
+
+  const code = await generateProductCode();
+
+  const payload = {
+    code,
+    name: productData.name.trim(),
+    sku: productData.sku?.trim() || null,
+    category: productData.category?.trim() || null,
+    purchasePrice: Number(productData.purchasePrice) || 0,
+    sellingPrice: Number(productData.sellingPrice) || 0,
+    stock: Number(productData.stock) || 0,
+    unit: productData.unit?.trim() || "pcs",
+    lowStockThreshold: Number(productData.lowStockThreshold) || 10,
+    imageUrl: productData.imageUrl || null,
+    status: productData.status || "active",
+    createdBy: uid,
+  };
+
+  const { id } = await createDocument("products", payload);
+  return { productId: id, code, product: { id, ...payload } };
+}
+
+export async function updateProductAtomic(productId, updates) {
+  const patch = {
+    name: updates.name?.trim(),
+    sku: updates.sku?.trim() || null,
+    category: updates.category?.trim() || null,
+    purchasePrice: Number(updates.purchasePrice) || 0,
+    sellingPrice: Number(updates.sellingPrice) || 0,
+    stock: Number(updates.stock) || 0,
+    unit: updates.unit?.trim() || "pcs",
+    lowStockThreshold: Number(updates.lowStockThreshold) || 10,
+    status: updates.status || "active",
+  };
+  await updateDocument("products", productId, patch);
+}
+
+/* ═══════════════════════════════════════════════════════
+   DELIVERY MAN — create / update
+   ═══════════════════════════════════════════════════════ */
+
+export async function createDeliveryManAtomic(data, uid) {
+  if (!data?.name) throw new Error("delivery-name-required");
+
+  const code = await generateDeliveryCode();
+
+  // ⚠️ Only business fields + joinedAt (semantic).
+  // createdAt/updatedAt added by createDocument().
+  const payload = {
+    code,
+    name: data.name.trim(),
+    phone: data.phone?.trim() || null,
+    altPhone: data.altPhone?.trim() || null,
+    address: data.address?.trim() || null,
+    area: data.area?.trim() || null,
+    district: data.district?.trim() || null,
+    vehicleType: data.vehicleType || "Motorcycle",
+    vehicleNumber: data.vehicleNumber?.trim() || null,
+    status: data.status || "active",
+    stats: {
+      totalAssigned: 0,
+      totalDelivered: 0,
+      totalFailed: 0,
+      totalReturned: 0,
+      totalCollected: 0,
+    },
+    joinedAt: serverTimestamp(),
+    createdBy: uid,
+  };
+
+  const { id } = await createDocument("deliveryMen", payload);
+  return { deliveryManId: id, code, data: { id, ...payload } };
+}
+
+export async function updateDeliveryManAtomic(id, data) {
+  const payload = {
+    name: data.name?.trim(),
+    phone: data.phone?.trim() || null,
+    altPhone: data.altPhone?.trim() || null,
+    address: data.address?.trim() || null,
+    area: data.area?.trim() || null,
+    district: data.district?.trim() || null,
+    vehicleType: data.vehicleType || "Motorcycle",
+    vehicleNumber: data.vehicleNumber?.trim() || null,
+    status: data.status || "active",
+  };
+  await updateDocument("deliveryMen", id, payload);
+}
+
+/* ═══════════════════════════════════════════════════════
+   ORDER — atomic create (with initial payment + shop stats)
    ═══════════════════════════════════════════════════════ */
 
 export async function createOrderAtomic(orderData, opts) {
@@ -466,102 +544,10 @@ export async function getShopOrders(shopId, opts = {}) {
   });
 }
 
-/**
- * Get a shop by its business code (SHP-00001).
- */
 export async function getShopByCode(code) {
   const result = await queryCollection("shops", {
     filters: [["code", "==", code]],
     limitCount: 1,
   });
   return result.items[0] || null;
-}
-
-
-
-/* ═══════════════════════════════════════════════════════
-   PRODUCT CODE GENERATOR — Sequential (PRD-00001)
-   ═══════════════════════════════════════════════════════ */
-
-/**
- * Generate the next sequential product code atomically.
- * Format: PRD-00001, PRD-00002, ...
- */
-export async function generateProductCode() {
-  const counterRef = doc(db, "counters", "productCounter");
-
-  const nextValue = await runTransaction(db, async (txn) => {
-    const snap = await txn.get(counterRef);
-    const current = snap.exists() ? snap.data().value || 0 : 0;
-    const next = current + 1;
-    txn.set(counterRef, { value: next }, { merge: true });
-    return next;
-  });
-
-  return `PRD-${String(nextValue).padStart(5, "0")}`;
-}
-
-/**
- * Create a product with sequential code.
- */
-export async function createProductAtomic(productData, uid) {
-  if (!productData?.name) throw new Error("product-name-required");
-
-  const code = await generateProductCode();
-
-  const payload = {
-    code,
-    name: productData.name.trim(),
-    sku: productData.sku?.trim() || null,
-    category: productData.category?.trim() || null,
-    purchasePrice: Number(productData.purchasePrice) || 0,
-    sellingPrice: Number(productData.sellingPrice) || 0,
-    stock: Number(productData.stock) || 0,
-    unit: productData.unit?.trim() || "pcs",
-    lowStockThreshold: Number(productData.lowStockThreshold) || 10,
-    imageUrl: productData.imageUrl || null,
-    status: productData.status || "active",
-    createdBy: uid,
-    createdAt: serverTimestamp(),
-    updatedAt: serverTimestamp(),
-  };
-
-  const { id } = await createDocument("products", payload);
-  return { productId: id, code, product: { id, ...payload } };
-}
-
-/**
- * Update a product.
- */
-export async function updateProductAtomic(productId, updates) {
-  const patch = {
-    name: updates.name?.trim(),
-    sku: updates.sku?.trim() || null,
-    category: updates.category?.trim() || null,
-    purchasePrice: Number(updates.purchasePrice) || 0,
-    sellingPrice: Number(updates.sellingPrice) || 0,
-    stock: Number(updates.stock) || 0,
-    unit: updates.unit?.trim() || "pcs",
-    lowStockThreshold: Number(updates.lowStockThreshold) || 10,
-    status: updates.status || "active",
-  };
-  await updateDocument("products", productId, patch);
-}
-
-// ─── bottom এ add করুন ─────────────────────────────────
-
-/**
- * Update an existing shop.
- */
-export async function updateShopAtomic(shopId, data) {
-  const payload = {
-    name: data.name?.trim(),
-    ownerName: data.ownerName?.trim() || null,
-    ownerPhone: data.ownerPhone?.trim() || null,
-    ownerAltPhone: data.ownerAltPhone?.trim() || null,
-    address: data.address?.trim() || null,
-    area: data.area?.trim() || null,
-    district: data.district?.trim() || null,
-  };
-  await updateDocument("shops", shopId, payload);
 }

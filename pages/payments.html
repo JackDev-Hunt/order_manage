@@ -1,0 +1,934 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <meta name="theme-color" content="#2563eb" />
+  <title>Payments — Order Management</title>
+
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            brand: { 50:"#eff6ff",100:"#dbeafe",200:"#bfdbfe",500:"#3b82f6",600:"#2563eb",700:"#1d4ed8",900:"#1e3a8a" }
+          },
+          fontFamily: { sans: ["Inter","system-ui","sans-serif"] },
+          transitionDuration: { "250": "250ms" }
+        }
+      }
+    };
+  </script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../assets/css/style.css" />
+
+  <style>
+    .modal-backdrop {
+      position: fixed; inset: 0; z-index: 100;
+      background: rgba(15, 23, 42, 0.55);
+      backdrop-filter: blur(2px); -webkit-backdrop-filter: blur(2px);
+      display: none; align-items: flex-end; justify-content: center;
+      animation: modalBackdropFade 0.2s ease-out;
+    }
+    .modal-backdrop.is-open { display: flex; }
+    @media (min-width: 640px) { .modal-backdrop { align-items: center; padding: 1.5rem; } }
+    .modal-panel {
+      width: 100%; max-width: 100%; background: #fff;
+      border-radius: 20px 20px 0 0; max-height: 92vh;
+      overflow: hidden; display: flex; flex-direction: column;
+      box-shadow: 0 -10px 30px rgba(15, 23, 42, 0.15);
+      animation: modalSlideUp 0.28s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    @media (min-width: 640px) {
+      .modal-panel {
+        max-width: 520px; border-radius: 16px;
+        box-shadow: 0 20px 60px rgba(15, 23, 42, 0.25);
+        animation: modalFadeScale 0.22s cubic-bezier(0.16, 1, 0.3, 1);
+      }
+    }
+    @keyframes modalSlideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
+    @keyframes modalFadeScale { from { opacity: 0; transform: scale(0.96); } to { opacity: 1; transform: scale(1); } }
+    @keyframes modalBackdropFade { from { opacity: 0; } to { opacity: 1; } }
+    .modal-grab { width: 40px; height: 4px; border-radius: 9999px; background: #cbd5e1; margin: 8px auto 0; }
+    @media (min-width: 640px) { .modal-grab { display: none; } }
+  </style>
+</head>
+
+<body class="bg-slate-50 min-h-screen">
+
+  <!-- Sidebar overlay -->
+  <div id="sidebar-overlay"
+       class="fixed inset-0 z-40 bg-slate-900/60 backdrop-blur-sm
+              opacity-0 pointer-events-none transition-opacity duration-[250ms] lg:hidden"
+       aria-hidden="true"></div>
+
+  <!-- Sidebar -->
+  <aside id="app-sidebar"
+         class="sidebar-drawer fixed top-0 left-0 bottom-0 z-50 w-64 bg-white border-r border-slate-200 flex flex-col"
+         aria-label="Main navigation">
+
+    <div class="flex items-center justify-between h-14 px-4 border-b border-slate-200 lg:hidden">
+      <a href="dashboard.html" class="flex items-center gap-2">
+        <span class="inline-flex items-center justify-center w-9 h-9 rounded-lg bg-brand-600 text-white">
+          <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" /></svg>
+        </span>
+        <span class="text-base font-semibold text-slate-900">Order<span class="text-brand-600">Mng</span></span>
+      </a>
+      <button type="button" id="sidebar-close"
+              class="inline-flex items-center justify-center w-10 h-10 rounded-lg text-slate-600 hover:bg-slate-100"
+              aria-label="Close menu">
+        <svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" /></svg>
+      </button>
+    </div>
+
+    <div class="hidden lg:flex items-center gap-2.5 h-16 px-4 border-b border-slate-200">
+      <span class="inline-flex items-center justify-center w-9 h-9 rounded-lg bg-brand-600 text-white">
+        <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" /></svg>
+      </span>
+      <div>
+        <p class="text-base font-semibold text-slate-900 leading-tight">Order<span class="text-brand-600">Mng</span></p>
+        <p class="text-[11px] text-slate-500 leading-tight">Business Suite</p>
+      </div>
+    </div>
+
+    <nav class="flex-1 overflow-y-auto py-3 px-2" aria-label="Primary">
+      <p class="px-3 pt-2 pb-1.5 text-[10px] font-semibold uppercase tracking-wider text-slate-400">Overview</p>
+      <ul class="space-y-0.5">
+        <li><a href="dashboard.html" class="nav-link relative flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-slate-700 hover:bg-slate-100">
+          <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" /></svg>
+          <span>Dashboard</span></a></li>
+        <li><a href="orders.html" class="nav-link relative flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-slate-700 hover:bg-slate-100">
+          <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" /></svg>
+          <span>Orders</span></a></li>
+      </ul>
+
+      <p class="px-3 pt-5 pb-1.5 text-[10px] font-semibold uppercase tracking-wider text-slate-400">Manage</p>
+      <ul class="space-y-0.5">
+        <li><a href="shops.html" class="nav-link relative flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-slate-700 hover:bg-slate-100">
+          <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M3 9l1.5-5h15L21 9m-1 0v11a1 1 0 01-1 1h-4v-7H9v7H5a1 1 0 01-1-1V9m16 0H3" /></svg>
+          <span>Customers</span></a></li>
+        <li><a href="products.html" class="nav-link relative flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-slate-700 hover:bg-slate-100">
+          <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" /></svg>
+          <span>Products</span></a></li>
+        <li><a href="payments.html" class="nav-link relative flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-slate-700 hover:bg-slate-100">
+          <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" /></svg>
+          <span>Payments</span></a></li>
+        <li><a href="delivery.html" class="nav-link relative flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-slate-700 hover:bg-slate-100"><span>Delivery</span></a></li>
+      </ul>
+
+      <p class="px-3 pt-5 pb-1.5 text-[10px] font-semibold uppercase tracking-wider text-slate-400">System</p>
+      <ul class="space-y-0.5">
+        <li><a href="reports.html" class="nav-link relative flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-slate-700 hover:bg-slate-100"><span>Reports</span></a></li>
+        <li><a href="settings.html" class="nav-link relative flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-slate-700 hover:bg-slate-100"><span>Settings</span></a></li>
+      </ul>
+    </nav>
+
+    <div class="border-t border-slate-200 p-2.5">
+      <div class="flex items-center gap-2.5 p-2 rounded-lg">
+        <span class="relative shrink-0">
+          <span id="sidebar-avatar" class="inline-flex items-center justify-center w-9 h-9 rounded-full bg-brand-100 text-brand-700 text-sm font-semibold">A</span>
+          <span class="absolute bottom-0 right-0 w-2.5 h-2.5 rounded-full bg-green-500 ring-2 ring-white"></span>
+        </span>
+        <div class="min-w-0 flex-1">
+          <p id="sidebar-name" class="text-sm font-medium text-slate-900 truncate">Admin</p>
+          <p id="sidebar-role" class="text-xs text-slate-500 truncate">Loading…</p>
+        </div>
+      </div>
+    </div>
+  </aside>
+
+  <!-- Main wrapper -->
+  <div class="lg:pl-64 min-h-screen flex flex-col">
+
+    <!-- Navbar -->
+    <header id="app-navbar" class="sticky top-0 z-30 bg-white border-b border-slate-200">
+      <div class="flex items-center justify-between h-14 sm:h-16 px-3 sm:px-4 lg:px-6 gap-2">
+        <div class="flex items-center gap-2 sm:gap-3 min-w-0 flex-1">
+          <button type="button" id="sidebar-toggle"
+                  class="lg:hidden inline-flex items-center justify-center w-10 h-10 rounded-lg shrink-0 text-slate-600 hover:bg-slate-100"
+                  aria-label="Open menu">
+            <svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M4 6h16M4 12h16M4 18h16" /></svg>
+          </button>
+          <nav class="hidden lg:flex items-center gap-1.5 text-sm">
+            <a href="dashboard.html" class="text-slate-500 hover:text-slate-700">Home</a>
+            <svg xmlns="http://www.w3.org/2000/svg" class="w-3.5 h-3.5 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7" /></svg>
+            <span class="font-medium text-slate-900">Payments</span>
+          </nav>
+          <h1 class="lg:hidden text-base font-semibold text-slate-900 truncate">Payments</h1>
+        </div>
+
+        <div class="flex items-center gap-1.5 shrink-0">
+          <div class="relative">
+            <button type="button" id="profile-btn"
+                    class="inline-flex items-center gap-2 pl-1 pr-1.5 sm:pr-2.5 py-1 rounded-lg hover:bg-slate-100">
+              <span class="relative">
+                <span id="profile-avatar" class="inline-flex items-center justify-center w-8 h-8 rounded-full bg-brand-100 text-brand-700 font-semibold text-sm">A</span>
+                <span class="absolute bottom-0 right-0 w-2 h-2 rounded-full bg-green-500 ring-2 ring-white"></span>
+              </span>
+              <span class="hidden sm:flex flex-col items-start leading-tight max-w-[120px]">
+                <span id="profile-name" class="text-sm font-medium text-slate-900 truncate">Admin</span>
+                <span id="profile-role" class="text-[11px] text-slate-500 truncate">Loading…</span>
+              </span>
+            </button>
+            <div id="profile-menu" class="hidden absolute right-0 mt-2 w-60 origin-top-right bg-white rounded-xl border border-slate-200 shadow-lg overflow-hidden">
+              <div class="px-4 py-3 border-b border-slate-100 bg-slate-50/50">
+                <p id="menu-name" class="text-sm font-semibold text-slate-900 truncate">Admin</p>
+                <p id="menu-email" class="text-xs text-slate-500 truncate">—</p>
+              </div>
+              <div class="border-t border-slate-100">
+                <button type="button" id="logout-btn" class="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-red-600 hover:bg-red-50">Logout</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </header>
+
+    <!-- Main -->
+    <main class="flex-1 px-3 sm:px-4 lg:px-6 py-4 sm:py-6">
+
+      <!-- Header -->
+      <div class="mb-4 sm:mb-5 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+        <div>
+          <h2 class="text-xl sm:text-2xl font-bold text-slate-900">Payments</h2>
+          <p class="text-sm text-slate-500 mt-0.5">
+            <span id="payments-count-label">Loading…</span>
+          </p>
+        </div>
+        <div class="flex items-center gap-2">
+          <button type="button" id="refresh-btn"
+                  class="inline-flex items-center justify-center gap-2 px-3 py-2 rounded-lg border border-slate-300
+                         bg-white text-sm font-medium text-slate-700 hover:bg-slate-50
+                         disabled:opacity-60 disabled:cursor-not-allowed">
+            <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+            </svg>
+            <span class="hidden sm:inline">Refresh</span>
+          </button>
+          <a href="order-create.html"
+             class="inline-flex items-center gap-2 px-3 py-2 rounded-lg bg-brand-600 hover:bg-brand-700
+                    text-sm font-medium text-white">
+            <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4" />
+            </svg>
+            New Order
+          </a>
+        </div>
+      </div>
+
+      <!-- Summary cards -->
+      <section aria-label="Payment summary"
+               class="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4 mb-4">
+        <div class="bg-white rounded-xl border border-slate-200 p-4 sm:p-5">
+          <div class="flex items-start justify-between">
+            <div class="min-w-0">
+              <p class="text-xs font-medium text-slate-500 uppercase tracking-wide">Total Received</p>
+              <p class="text-2xl font-bold text-green-600 mt-1" id="sum-total-received">—</p>
+              <p class="text-xs text-slate-500 mt-1">All time</p>
+            </div>
+            <span class="inline-flex items-center justify-center w-10 h-10 rounded-lg bg-green-50 text-green-600 shrink-0">
+              <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+            </span>
+          </div>
+        </div>
+
+        <div class="bg-white rounded-xl border border-slate-200 p-4 sm:p-5">
+          <div class="flex items-start justify-between">
+            <div class="min-w-0">
+              <p class="text-xs font-medium text-slate-500 uppercase tracking-wide">Today's Collection</p>
+              <p class="text-2xl font-bold text-brand-600 mt-1" id="sum-today">—</p>
+              <p class="text-xs text-slate-500 mt-1">Payments today</p>
+            </div>
+            <span class="inline-flex items-center justify-center w-10 h-10 rounded-lg bg-brand-50 text-brand-600 shrink-0">
+              <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+            </span>
+          </div>
+        </div>
+
+        <div class="bg-white rounded-xl border border-slate-200 p-4 sm:p-5">
+          <div class="flex items-start justify-between">
+            <div class="min-w-0">
+              <p class="text-xs font-medium text-slate-500 uppercase tracking-wide">This Month</p>
+              <p class="text-2xl font-bold text-purple-600 mt-1" id="sum-month">—</p>
+              <p class="text-xs text-slate-500 mt-1">Current month</p>
+            </div>
+            <span class="inline-flex items-center justify-center w-10 h-10 rounded-lg bg-purple-50 text-purple-600 shrink-0">
+              <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+              </svg>
+            </span>
+          </div>
+        </div>
+      </section>
+
+      <!-- Filter bar -->
+      <div class="bg-white rounded-xl border border-slate-200 p-3 sm:p-4 mb-4">
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-3">
+
+          <!-- Search -->
+          <div class="lg:col-span-2">
+            <label for="search-input" class="sr-only">Search payments</label>
+            <div class="relative">
+              <span class="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none">
+                <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-4.35-4.35M17 10.5a6.5 6.5 0 11-13 0 6.5 6.5 0 0113 0z" /></svg>
+              </span>
+              <input type="search" id="search-input" placeholder="Order ID, customer, shop, txn code…"
+                     class="w-full pl-9 pr-3 py-2.5 sm:py-2 rounded-lg border border-slate-300 text-sm
+                            focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-brand-500" />
+            </div>
+          </div>
+
+          <!-- Method filter -->
+          <div>
+            <label for="method-filter" class="sr-only">Payment method</label>
+            <select id="method-filter"
+                    class="w-full px-3 py-2.5 sm:py-2 rounded-lg border border-slate-300 text-sm bg-white
+                           focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-brand-500">
+              <option value="">All methods</option>
+              <option value="Cash">Cash</option>
+              <option value="bKash">bKash</option>
+              <option value="Nagad">Nagad</option>
+              <option value="Bank">Bank</option>
+              <option value="Other">Other</option>
+            </select>
+          </div>
+
+          <!-- Date range filter -->
+          <div>
+            <label for="date-filter" class="sr-only">Date range</label>
+            <select id="date-filter"
+                    class="w-full px-3 py-2.5 sm:py-2 rounded-lg border border-slate-300 text-sm bg-white
+                           focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-brand-500">
+              <option value="all">All time</option>
+              <option value="today">Today</option>
+              <option value="week">This week</option>
+              <option value="month">This month</option>
+            </select>
+          </div>
+        </div>
+      </div>
+
+      <!-- Payments table container -->
+      <div class="bg-white rounded-xl border border-slate-200 overflow-hidden">
+
+        <!-- Desktop table -->
+        <div class="hidden md:block">
+          <div class="overflow-x-auto">
+            <table class="w-full" aria-label="Payments list">
+              <thead>
+                <tr class="border-b border-slate-200 bg-slate-50">
+                  <th class="text-left text-[11px] font-semibold uppercase tracking-wider text-slate-500 px-4 py-3 whitespace-nowrap">TXN Code</th>
+                  <th class="text-left text-[11px] font-semibold uppercase tracking-wider text-slate-500 px-4 py-3">Order</th>
+                  <th class="text-left text-[11px] font-semibold uppercase tracking-wider text-slate-500 px-4 py-3">Customer</th>
+                  <th class="text-right text-[11px] font-semibold uppercase tracking-wider text-slate-500 px-4 py-3">Amount</th>
+                  <th class="text-center text-[11px] font-semibold uppercase tracking-wider text-slate-500 px-4 py-3">Method</th>
+                  <th class="text-left text-[11px] font-semibold uppercase tracking-wider text-slate-500 px-4 py-3">Date</th>
+                  <th class="text-right text-[11px] font-semibold uppercase tracking-wider text-slate-500 px-4 py-3">Actions</th>
+                </tr>
+              </thead>
+              <tbody id="payments-tbody" class="divide-y divide-slate-100"></tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Mobile cards -->
+        <div id="payments-cards" class="md:hidden divide-y divide-slate-100"></div>
+
+        <!-- Empty -->
+        <div id="payments-empty" class="hidden p-8 sm:p-12 text-center">
+          <div class="inline-flex items-center justify-center w-12 h-12 rounded-full bg-slate-100 text-slate-400 mb-3">
+            <svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
+            </svg>
+          </div>
+          <p class="text-sm font-medium text-slate-700" id="empty-title">No payments yet</p>
+          <p class="text-xs text-slate-500 mt-0.5" id="empty-desc">Payments will appear here when orders are created.</p>
+        </div>
+
+        <!-- Load more -->
+        <div id="load-more-wrap" class="hidden px-4 py-3 border-t border-slate-100 text-center">
+          <button type="button" id="load-more-btn"
+                  class="inline-flex items-center gap-2 px-4 py-2 rounded-lg border border-slate-300
+                         bg-white text-sm font-medium text-slate-700 hover:bg-slate-50
+                         disabled:opacity-60 disabled:cursor-not-allowed">
+            <span class="btn-label">Load more</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Footer stats -->
+      <div class="mt-4 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-slate-500">
+        <span>Showing <span id="shown-count" class="font-medium text-slate-700">0</span> payments</span>
+        <span class="w-1 h-1 rounded-full bg-slate-300"></span>
+        <span>Total loaded: <span id="total-count" class="font-medium text-slate-700">0</span></span>
+        <span class="w-1 h-1 rounded-full bg-slate-300"></span>
+        <span>Sum: <span id="shown-sum" class="font-medium text-green-600">৳0.00</span></span>
+      </div>
+    </main>
+
+    <footer class="border-t border-slate-200 bg-white">
+      <div class="px-4 lg:px-6 py-4 text-xs text-slate-500 text-center sm:text-left sm:flex sm:items-center sm:justify-between">
+        <p>© <span id="footer-year"></span> Order Management System</p>
+      </div>
+    </footer>
+  </div>
+
+  <!-- ══════════════════════════════════════════════════════
+       TRANSACTION DETAIL MODAL
+       ══════════════════════════════════════════════════════ -->
+  <div id="txn-modal" class="modal-backdrop" role="dialog" aria-modal="true"
+       aria-labelledby="txn-modal-title" aria-hidden="true">
+    <div class="modal-panel" role="document">
+
+      <div class="modal-grab"></div>
+
+      <div class="flex items-start justify-between gap-3 px-5 sm:px-6 pt-4 sm:pt-5 pb-3 border-b border-slate-100">
+        <div class="flex items-center gap-3 min-w-0">
+          <span class="inline-flex items-center justify-center w-10 h-10 rounded-xl bg-green-50 text-green-600 shrink-0">
+            <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
+            </svg>
+          </span>
+          <div class="min-w-0">
+            <h2 id="txn-modal-title" class="text-base sm:text-lg font-semibold text-slate-900">Payment Details</h2>
+            <p id="txn-modal-sub" class="text-xs text-slate-500 mt-0.5">—</p>
+          </div>
+        </div>
+        <button type="button" id="txn-modal-close"
+                class="shrink-0 inline-flex items-center justify-center w-9 h-9 rounded-lg
+                       text-slate-400 hover:bg-slate-100 hover:text-slate-600"
+                aria-label="Close dialog">
+          <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+          </svg>
+        </button>
+      </div>
+
+      <div id="txn-modal-body" class="px-5 sm:px-6 py-4 overflow-y-auto"></div>
+
+      <div class="flex items-center justify-end gap-2 px-5 sm:px-6 py-4 border-t border-slate-100">
+        <button type="button" id="txn-modal-done"
+                class="inline-flex items-center justify-center px-4 py-2.5 rounded-lg
+                       bg-slate-100 text-slate-700 hover:bg-slate-200 text-sm font-medium">
+          Close
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast -->
+  <div id="toast-container"
+       class="fixed top-4 right-4 left-4 sm:left-auto sm:top-6 sm:right-6 z-[9999]
+              flex flex-col gap-2 pointer-events-none"
+       role="region" aria-label="Notifications" aria-live="polite"></div>
+
+  <script type="module">
+    import { requireAuth, logoutUser } from "../assets/js/firebase/auth.js";
+    import { toast } from "../assets/js/utils/toast.js";
+    import {
+      queryCollectionCached,
+      cacheClear,
+    } from "../assets/js/firebase/firestore.js";
+    import {
+      formatCurrency, formatDate, timeAgo,
+      debounce, escapeHtml,
+    } from "../assets/js/utils/helpers.js";
+
+    /* ─── AUTH GUARD ──────────────────────────────────── */
+    let currentUser, currentProfile;
+    try {
+      const a = await requireAuth("../../login.html");
+      currentUser = a.user;
+      currentProfile = a.profile;
+    } catch { throw new Error("Unauthorized"); }
+
+    /* ─── USER UI ─────────────────────────────────────── */
+    const userName  = currentProfile?.name || currentUser.displayName || "User";
+    const userRole  = currentProfile?.role || "staff";
+    const userEmail = currentUser.email || "";
+    const initial   = (userName.charAt(0) || "U").toUpperCase();
+
+    document.getElementById("profile-avatar").textContent = initial;
+    document.getElementById("profile-name").textContent = userName;
+    document.getElementById("profile-role").textContent = capitalize(userRole);
+    document.getElementById("menu-name").textContent = userName;
+    document.getElementById("menu-email").textContent = userEmail;
+    document.getElementById("sidebar-avatar").textContent = initial;
+    document.getElementById("sidebar-name").textContent = userName;
+    document.getElementById("sidebar-role").textContent = capitalize(userRole);
+    document.getElementById("footer-year").textContent = new Date().getFullYear();
+
+    /* ─── SIDEBAR / NAVBAR ─────────────────────────────── */
+    const sidebar = document.getElementById("app-sidebar");
+    const overlay = document.getElementById("sidebar-overlay");
+    const toggleBtn = document.getElementById("sidebar-toggle");
+    const closeBtn  = document.getElementById("sidebar-close");
+    const openSidebar  = () => { sidebar.classList.add("is-open"); overlay.classList.add("is-visible"); document.body.classList.add("no-scroll"); };
+    const closeSidebar = () => { sidebar.classList.remove("is-open"); overlay.classList.remove("is-visible"); document.body.classList.remove("no-scroll"); };
+    toggleBtn.addEventListener("click", openSidebar);
+    closeBtn.addEventListener("click", closeSidebar);
+    overlay.addEventListener("click", closeSidebar);
+    sidebar.querySelectorAll("a.nav-link").forEach((a) => a.addEventListener("click", () => { if (innerWidth < 1024) closeSidebar(); }));
+    sidebar.querySelector(`a[href="${location.pathname.split("/").pop()}"]`)?.classList.add("active");
+
+    const profileBtn  = document.getElementById("profile-btn");
+    const profileMenu = document.getElementById("profile-menu");
+    profileBtn.addEventListener("click", (e) => { e.stopPropagation(); profileMenu.classList.toggle("hidden"); });
+    document.addEventListener("click", (e) => { if (!profileMenu.contains(e.target) && !profileBtn.contains(e.target)) profileMenu.classList.add("hidden"); });
+    document.addEventListener("keydown", (e) => { if (e.key === "Escape") { closeSidebar(); profileMenu.classList.add("hidden"); } });
+
+    document.getElementById("logout-btn").addEventListener("click", async () => {
+      try { await logoutUser(); toast.success("Logged out"); setTimeout(() => location.replace("../../login.html"), 300); }
+      catch { toast.error("Logout failed"); }
+    });
+
+    /* ─── STATE ───────────────────────────────────────── */
+    const PAGE_SIZE = 30;
+    const state = {
+      items: [],
+      lastDoc: null,
+      hasMore: false,
+      loading: false,
+      search: "",
+      methodFilter: "",
+      dateFilter: "all",
+    };
+
+    /* ─── DOM REFS ────────────────────────────────────── */
+    const tbody = document.getElementById("payments-tbody");
+    const cardsWrap = document.getElementById("payments-cards");
+    const emptyEl = document.getElementById("payments-empty");
+    const emptyTitle = document.getElementById("empty-title");
+    const emptyDesc = document.getElementById("empty-desc");
+    const loadMoreWrap = document.getElementById("load-more-wrap");
+    const loadMoreBtn = document.getElementById("load-more-btn");
+    const searchInput = document.getElementById("search-input");
+    const methodFilter = document.getElementById("method-filter");
+    const dateFilter = document.getElementById("date-filter");
+    const shownCount = document.getElementById("shown-count");
+    const totalCountEl = document.getElementById("total-count");
+    const shownSumEl = document.getElementById("shown-sum");
+    const countLabel = document.getElementById("payments-count-label");
+    const refreshBtn = document.getElementById("refresh-btn");
+
+    /* ════════════════════════════════════════════════════
+       DATE HELPERS
+       ════════════════════════════════════════════════════ */
+    function getDateRange(key) {
+      const now = new Date();
+      const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0);
+
+      if (key === "today") return { start: startOfToday, end: null };
+      if (key === "week") {
+        const dayOfWeek = now.getDay(); // 0 = Sunday
+        const start = new Date(startOfToday);
+        start.setDate(start.getDate() - dayOfWeek);
+        return { start, end: null };
+      }
+      if (key === "month") {
+        const start = new Date(now.getFullYear(), now.getMonth(), 1, 0, 0, 0);
+        return { start, end: null };
+      }
+      return { start: null, end: null };
+    }
+
+    /* ════════════════════════════════════════════════════
+       LOAD PAYMENTS
+       ════════════════════════════════════════════════════ */
+    async function loadPayments({ reset = false } = {}) {
+      if (state.loading) return;
+      state.loading = true;
+      refreshBtn.disabled = true;
+
+      if (reset) {
+        state.items = [];
+        state.lastDoc = null;
+      }
+
+      // Build filters
+      const filters = [];
+      if (state.methodFilter) filters.push(["method", "==", state.methodFilter]);
+
+      const { start } = getDateRange(state.dateFilter);
+      if (start) filters.push(["createdAt", ">=", start]);
+
+      let result;
+      try {
+        result = await queryCollectionCached("transactions", {
+          filters,
+          order: [["createdAt", "desc"]],
+          limitCount: PAGE_SIZE,
+          cursor: reset ? null : state.lastDoc,
+          cacheTtlMs: 30000,
+        });
+      } catch (err) {
+        console.error("Load payments failed:", err);
+
+        // Fallback: simple query if composite index missing
+        if (err.code === "failed-precondition" || err.message?.includes("index")) {
+          toast.error("Firestore index missing. Check console for link.");
+        } else {
+          toast.error("Could not load payments.");
+        }
+
+        state.loading = false;
+        refreshBtn.disabled = false;
+        return;
+      }
+
+      const existingIds = new Set(state.items.map((t) => t.id));
+      const fresh = result.items.filter((t) => !existingIds.has(t.id));
+
+      state.items = state.items.concat(fresh);
+      state.lastDoc = result.lastDoc;
+      state.hasMore = result.hasMore;
+      state.loading = false;
+      refreshBtn.disabled = false;
+
+      render();
+      computeSummary();
+    }
+
+    /* ════════════════════════════════════════════════════
+       RENDER
+       ════════════════════════════════════════════════════ */
+    function render() {
+      const filtered = applyClientFilters(state.items);
+
+      shownCount.textContent = filtered.length;
+      totalCountEl.textContent = state.items.length;
+
+      // Sum of shown
+      const sum = filtered.reduce((s, t) => s + (Number(t.amount) || 0), 0);
+      shownSumEl.textContent = formatCurrency(sum);
+
+      if (state.search || state.methodFilter || state.dateFilter !== "all") {
+        countLabel.textContent = `${filtered.length} of ${state.items.length} shown`;
+      } else {
+        countLabel.textContent = state.items.length === 0
+          ? "No payments yet"
+          : `${state.items.length} payment${state.items.length > 1 ? "s" : ""} loaded`;
+      }
+
+      if (filtered.length === 0) {
+        tbody.innerHTML = "";
+        cardsWrap.innerHTML = "";
+        emptyEl.classList.remove("hidden");
+        loadMoreWrap.classList.add("hidden");
+
+        if (state.search || state.methodFilter || state.dateFilter !== "all") {
+          emptyTitle.textContent = "No matching payments";
+          emptyDesc.textContent = "Try adjusting filters or search term.";
+        } else {
+          emptyTitle.textContent = "No payments yet";
+          emptyDesc.textContent = "Payments will appear here when orders are created.";
+        }
+        return;
+      }
+
+      emptyEl.classList.add("hidden");
+      tbody.innerHTML = filtered.map(renderRow).join("");
+      cardsWrap.innerHTML = filtered.map(renderCard).join("");
+      loadMoreWrap.classList.toggle("hidden", !state.hasMore);
+    }
+
+    /* ─── CLIENT FILTER ───────────────────────────────── */
+    function applyClientFilters(items) {
+      if (!state.search) return items;
+      const q = state.search.toLowerCase().trim();
+      return items.filter((t) => {
+        const hay = [
+          t.code, t.orderCode, t.shopCode, t.shopName,
+          t.customerName, t.note, t.method, t.reference,
+        ].filter(Boolean).join(" ").toLowerCase();
+        return hay.includes(q);
+      });
+    }
+
+    /* ─── AMOUNT BADGE / METHOD ───────────────────────── */
+    function methodBadge(method) {
+      const map = {
+        "Cash":  "badge-delivered",
+        "bKash": "badge-processing",
+        "Nagad": "badge-confirmed",
+        "Bank":  "badge-assigned",
+        "Other": "badge-returned",
+      };
+      const cls = map[method] || "badge-returned";
+      return `<span class="badge ${cls}"><span class="badge-dot"></span>${escapeHtml(method || "—")}</span>`;
+    }
+
+    /* ─── DESKTOP ROW ─────────────────────────────────── */
+    function renderRow(t) {
+      const code = escapeHtml(t.code || t.id.slice(0, 8));
+      const orderCode = escapeHtml(t.orderCode || "—");
+      const customerName = escapeHtml(t.customerName || t.shopName || "—");
+      const amount = formatCurrency(t.amount || 0);
+      const method = t.method || "Cash";
+      const date = t.createdAt ? timeAgo(t.createdAt) : "—";
+
+      return `
+        <tr class="hover:bg-slate-50" data-id="${t.id}">
+          <td class="px-4 py-3">
+            <span class="inline-flex items-center px-2 py-0.5 rounded-md bg-green-50 text-green-700 text-[11px] font-semibold whitespace-nowrap">
+              ${code}
+            </span>
+          </td>
+          <td class="px-4 py-3">
+            <p class="text-sm font-medium text-slate-900">${orderCode}</p>
+            ${t.shopCode ? `<p class="text-xs text-slate-500">${escapeHtml(t.shopCode)}</p>` : ""}
+          </td>
+          <td class="px-4 py-3">
+            <p class="text-sm text-slate-700 truncate max-w-[200px]">${customerName}</p>
+          </td>
+          <td class="px-4 py-3 text-right">
+            <span class="text-sm font-bold text-green-600 whitespace-nowrap">${amount}</span>
+          </td>
+          <td class="px-4 py-3 text-center">${methodBadge(method)}</td>
+          <td class="px-4 py-3 text-xs text-slate-500 whitespace-nowrap">${date}</td>
+          <td class="px-4 py-3 text-right">
+            <button type="button" class="txn-view-btn inline-flex items-center justify-center w-8 h-8 rounded-md text-slate-600 hover:bg-slate-100"
+                    data-id="${t.id}" title="View details" aria-label="View details">
+              <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                <path stroke-linecap="round" stroke-linejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+              </svg>
+            </button>
+          </td>
+        </tr>
+      `;
+    }
+
+    /* ─── MOBILE CARD ─────────────────────────────────── */
+    function renderCard(t) {
+      const code = escapeHtml(t.code || t.id.slice(0, 8));
+      const orderCode = escapeHtml(t.orderCode || "—");
+      const customerName = escapeHtml(t.customerName || t.shopName || "—");
+      const amount = formatCurrency(t.amount || 0);
+      const method = t.method || "Cash";
+      const date = t.createdAt ? timeAgo(t.createdAt) : "—";
+
+      return `
+        <div class="p-4" data-id="${t.id}">
+          <div class="flex items-start justify-between gap-3 mb-2">
+            <div class="min-w-0">
+              <span class="inline-flex items-center px-2 py-0.5 rounded-md bg-green-50 text-green-700 text-[10px] font-semibold">${code}</span>
+              <p class="text-sm font-medium text-slate-900 mt-1.5 truncate">${customerName}</p>
+              <p class="text-xs text-slate-500 mt-0.5">Order: ${orderCode}</p>
+            </div>
+            ${methodBadge(method)}
+          </div>
+          <div class="flex items-center justify-between gap-2 pt-3 border-t border-slate-100">
+            <div>
+              <p class="text-[10px] uppercase font-semibold text-slate-500">Amount</p>
+              <p class="text-lg font-bold text-green-600">${amount}</p>
+            </div>
+            <div class="text-right">
+              <p class="text-[10px] uppercase font-semibold text-slate-500">Date</p>
+              <p class="text-xs text-slate-600">${date}</p>
+            </div>
+          </div>
+          <button type="button" class="txn-view-btn mt-3 w-full inline-flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg
+                          border border-slate-300 text-slate-700 hover:bg-slate-50 text-xs font-medium"
+                  data-id="${t.id}">
+            <svg xmlns="http://www.w3.org/2000/svg" class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+              <path stroke-linecap="round" stroke-linejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+            </svg>
+            View details
+          </button>
+        </div>
+      `;
+    }
+
+    /* ════════════════════════════════════════════════════
+       COMPUTE SUMMARY
+       ════════════════════════════════════════════════════ */
+    function computeSummary() {
+      const now = new Date();
+      const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+      const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+
+      let total = 0, today = 0, month = 0;
+
+      state.items.forEach((t) => {
+        const amt = Number(t.amount) || 0;
+        total += amt;
+
+        if (t.createdAt?.toDate) {
+          const d = t.createdAt.toDate();
+          if (d >= startOfToday) today += amt;
+          if (d >= startOfMonth) month += amt;
+        }
+      });
+
+      document.getElementById("sum-total-received").textContent = formatCurrency(total);
+      document.getElementById("sum-today").textContent = formatCurrency(today);
+      document.getElementById("sum-month").textContent = formatCurrency(month);
+    }
+
+    /* ════════════════════════════════════════════════════
+       TRANSACTION DETAIL MODAL
+       ════════════════════════════════════════════════════ */
+    const txnModal = document.getElementById("txn-modal");
+    const txnModalBody = document.getElementById("txn-modal-body");
+    const txnModalSub = document.getElementById("txn-modal-sub");
+
+    function openTxnModal(txn) {
+      txnModalSub.textContent = txn.code || txn.id.slice(0, 8);
+
+      txnModalBody.innerHTML = `
+        <!-- Amount hero -->
+        <div class="text-center py-4 mb-4 rounded-xl bg-green-50 border border-green-100">
+          <p class="text-xs font-medium text-green-700 uppercase tracking-wide">Payment Amount</p>
+          <p class="text-3xl font-bold text-green-700 mt-1">${formatCurrency(txn.amount || 0)}</p>
+          <p class="text-xs text-green-600 mt-1">via ${escapeHtml(txn.method || "Cash")}</p>
+        </div>
+
+        <!-- Details grid -->
+        <div class="grid grid-cols-2 gap-3 mb-4">
+          <div class="p-3 rounded-lg bg-slate-50">
+            <p class="text-[10px] uppercase font-semibold text-slate-500">TXN Code</p>
+            <p class="text-sm font-semibold text-slate-900 mt-0.5">${escapeHtml(txn.code || "—")}</p>
+          </div>
+          <div class="p-3 rounded-lg bg-slate-50">
+            <p class="text-[10px] uppercase font-semibold text-slate-500">Method</p>
+            <p class="text-sm font-semibold text-slate-900 mt-0.5">${escapeHtml(txn.method || "—")}</p>
+          </div>
+          <div class="p-3 rounded-lg bg-slate-50">
+            <p class="text-[10px] uppercase font-semibold text-slate-500">Order ID</p>
+            <p class="text-sm font-semibold text-slate-900 mt-0.5">${escapeHtml(txn.orderCode || "—")}</p>
+          </div>
+          <div class="p-3 rounded-lg bg-slate-50">
+            <p class="text-[10px] uppercase font-semibold text-slate-500">Date</p>
+            <p class="text-sm font-semibold text-slate-900 mt-0.5">${txn.createdAt ? formatDate(txn.createdAt, true) : "—"}</p>
+          </div>
+        </div>
+
+        <!-- Customer info -->
+        ${txn.customerName || txn.shopName ? `
+          <div class="mb-4">
+            <p class="text-[11px] font-semibold uppercase tracking-wide text-slate-500 mb-1.5">Customer</p>
+            <p class="text-sm font-medium text-slate-900">${escapeHtml(txn.customerName || txn.shopName)}</p>
+            ${txn.shopCode ? `<p class="text-xs text-slate-500 mt-0.5">${escapeHtml(txn.shopCode)}</p>` : ""}
+          </div>
+        ` : ""}
+
+        <!-- Order state after -->
+        ${(txn.orderPaidAfter != null || txn.orderDueAfter != null) ? `
+          <div class="grid grid-cols-2 gap-3 mb-4">
+            <div class="p-3 rounded-lg bg-slate-50">
+              <p class="text-[10px] uppercase font-semibold text-slate-500">Paid After</p>
+              <p class="text-sm font-semibold text-green-600 mt-0.5">${formatCurrency(txn.orderPaidAfter || 0)}</p>
+            </div>
+            <div class="p-3 rounded-lg bg-slate-50">
+              <p class="text-[10px] uppercase font-semibold text-slate-500">Due After</p>
+              <p class="text-sm font-semibold ${(txn.orderDueAfter || 0) > 0 ? "text-red-600" : "text-slate-500"} mt-0.5">${formatCurrency(txn.orderDueAfter || 0)}</p>
+            </div>
+          </div>
+        ` : ""}
+
+        <!-- Note -->
+        ${txn.note ? `
+          <div class="p-3 rounded-lg bg-amber-50 border border-amber-100 mb-4">
+            <p class="text-[11px] font-semibold uppercase tracking-wide text-amber-700 mb-1">Note</p>
+            <p class="text-sm text-amber-900">${escapeHtml(txn.note)}</p>
+          </div>
+        ` : ""}
+
+        <!-- Reference -->
+        ${txn.reference ? `
+          <div class="p-3 rounded-lg bg-slate-50">
+            <p class="text-[11px] font-semibold uppercase tracking-wide text-slate-500 mb-1">Reference</p>
+            <p class="text-sm text-slate-700">${escapeHtml(txn.reference)}</p>
+          </div>
+        ` : ""}
+
+        <!-- Actions -->
+        <div class="mt-4 pt-4 border-t border-slate-100">
+          <a href="orders.html?q=${encodeURIComponent(txn.orderCode || "")}"
+             class="inline-flex items-center gap-2 text-sm font-medium text-brand-600 hover:text-brand-700">
+            <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+            </svg>
+            View order → ${escapeHtml(txn.orderCode || "")}
+          </a>
+        </div>
+      `;
+
+      txnModal.classList.add("is-open");
+      txnModal.setAttribute("aria-hidden", "false");
+      document.body.classList.add("no-scroll");
+    }
+
+    function closeTxnModal() {
+      txnModal.classList.remove("is-open");
+      txnModal.setAttribute("aria-hidden", "true");
+      document.body.classList.remove("no-scroll");
+    }
+
+    document.getElementById("txn-modal-close").addEventListener("click", closeTxnModal);
+    document.getElementById("txn-modal-done").addEventListener("click", closeTxnModal);
+    txnModal.addEventListener("click", (e) => { if (e.target === txnModal) closeTxnModal(); });
+    document.addEventListener("keydown", (e) => {
+      if (e.key === "Escape" && txnModal.classList.contains("is-open")) closeTxnModal();
+    });
+
+    /* ─── DELEGATED CLICK — view details ──────────────── */
+    document.addEventListener("click", (e) => {
+      const btn = e.target.closest(".txn-view-btn");
+      if (!btn) return;
+      const txn = state.items.find((t) => t.id === btn.dataset.id);
+      if (txn) openTxnModal(txn);
+    });
+
+    /* ════════════════════════════════════════════════════
+       FILTERS
+       ════════════════════════════════════════════════════ */
+    searchInput.addEventListener("input", debounce(() => {
+      state.search = searchInput.value.trim();
+      render();
+    }, 200));
+
+    methodFilter.addEventListener("change", () => {
+      state.methodFilter = methodFilter.value;
+      loadPayments({ reset: true });
+    });
+
+    dateFilter.addEventListener("change", () => {
+      state.dateFilter = dateFilter.value;
+      loadPayments({ reset: true });
+    });
+
+    loadMoreBtn.addEventListener("click", () => {
+      const label = loadMoreBtn.querySelector(".btn-label");
+      loadMoreBtn.disabled = true;
+      label.textContent = "Loading…";
+      loadPayments().finally(() => {
+        loadMoreBtn.disabled = false;
+        label.textContent = "Load more";
+      });
+    });
+
+    refreshBtn.addEventListener("click", () => {
+      cacheClear("q:transactions");
+      loadPayments({ reset: true });
+      toast.info("Refreshed");
+    });
+
+    /* ─── BOOTSTRAP ───────────────────────────────────── */
+    (async function init() {
+      await loadPayments({ reset: true });
+    })();
+
+    function capitalize(s) { return s ? s.charAt(0).toUpperCase() + s.slice(1) : ""; }
+  </script>
+</body>
+</html>
