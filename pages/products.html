@@ -1,0 +1,1058 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <meta name="theme-color" content="#2563eb" />
+  <title>Products — Order Management</title>
+
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            brand: { 50:"#eff6ff",100:"#dbeafe",200:"#bfdbfe",500:"#3b82f6",600:"#2563eb",700:"#1d4ed8",900:"#1e3a8a" }
+          },
+          fontFamily: { sans: ["Inter","system-ui","sans-serif"] },
+          transitionDuration: { "250": "250ms" }
+        }
+      }
+    };
+  </script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../assets/css/style.css" />
+
+  <style>
+    .modal-backdrop {
+      position: fixed; inset: 0; z-index: 100;
+      background: rgba(15, 23, 42, 0.55);
+      backdrop-filter: blur(2px); -webkit-backdrop-filter: blur(2px);
+      display: none; align-items: flex-end; justify-content: center;
+      animation: modalBackdropFade 0.2s ease-out;
+    }
+    .modal-backdrop.is-open { display: flex; }
+    @media (min-width: 640px) { .modal-backdrop { align-items: center; padding: 1.5rem; } }
+    .modal-panel {
+      width: 100%; max-width: 100%; background: #fff;
+      border-radius: 20px 20px 0 0; max-height: 92vh;
+      overflow: hidden; display: flex; flex-direction: column;
+      box-shadow: 0 -10px 30px rgba(15, 23, 42, 0.15);
+      animation: modalSlideUp 0.28s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    @media (min-width: 640px) {
+      .modal-panel {
+        max-width: 520px; border-radius: 16px;
+        box-shadow: 0 20px 60px rgba(15, 23, 42, 0.25);
+        animation: modalFadeScale 0.22s cubic-bezier(0.16, 1, 0.3, 1);
+      }
+    }
+    @keyframes modalSlideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
+    @keyframes modalFadeScale { from { opacity: 0; transform: scale(0.96); } to { opacity: 1; transform: scale(1); } }
+    @keyframes modalBackdropFade { from { opacity: 0; } to { opacity: 1; } }
+    .modal-grab { width: 40px; height: 4px; border-radius: 9999px; background: #cbd5e1; margin: 8px auto 0; }
+    @media (min-width: 640px) { .modal-grab { display: none; } }
+  </style>
+</head>
+
+<body class="bg-slate-50 min-h-screen">
+
+  <!-- Sidebar overlay -->
+  <div id="sidebar-overlay"
+       class="fixed inset-0 z-40 bg-slate-900/60 backdrop-blur-sm
+              opacity-0 pointer-events-none transition-opacity duration-[250ms] lg:hidden"
+       aria-hidden="true"></div>
+
+  <!-- Sidebar -->
+  <aside id="app-sidebar"
+         class="sidebar-drawer fixed top-0 left-0 bottom-0 z-50 w-64 bg-white border-r border-slate-200 flex flex-col"
+         aria-label="Main navigation">
+
+    <div class="flex items-center justify-between h-14 px-4 border-b border-slate-200 lg:hidden">
+      <a href="dashboard.html" class="flex items-center gap-2">
+        <span class="inline-flex items-center justify-center w-9 h-9 rounded-lg bg-brand-600 text-white">
+          <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" /></svg>
+        </span>
+        <span class="text-base font-semibold text-slate-900">Order<span class="text-brand-600">Mng</span></span>
+      </a>
+      <button type="button" id="sidebar-close"
+              class="inline-flex items-center justify-center w-10 h-10 rounded-lg text-slate-600 hover:bg-slate-100"
+              aria-label="Close menu">
+        <svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" /></svg>
+      </button>
+    </div>
+
+    <div class="hidden lg:flex items-center gap-2.5 h-16 px-4 border-b border-slate-200">
+      <span class="inline-flex items-center justify-center w-9 h-9 rounded-lg bg-brand-600 text-white">
+        <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" /></svg>
+      </span>
+      <div>
+        <p class="text-base font-semibold text-slate-900 leading-tight">Order<span class="text-brand-600">Mng</span></p>
+        <p class="text-[11px] text-slate-500 leading-tight">Business Suite</p>
+      </div>
+    </div>
+
+    <nav class="flex-1 overflow-y-auto py-3 px-2" aria-label="Primary">
+      <p class="px-3 pt-2 pb-1.5 text-[10px] font-semibold uppercase tracking-wider text-slate-400">Overview</p>
+      <ul class="space-y-0.5">
+        <li><a href="dashboard.html" class="nav-link relative flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-slate-700 hover:bg-slate-100">
+          <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" /></svg>
+          <span>Dashboard</span></a></li>
+        <li><a href="orders.html" class="nav-link relative flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-slate-700 hover:bg-slate-100">
+          <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" /></svg>
+          <span>Orders</span></a></li>
+      </ul>
+
+      <p class="px-3 pt-5 pb-1.5 text-[10px] font-semibold uppercase tracking-wider text-slate-400">Manage</p>
+      <ul class="space-y-0.5">
+        <li><a href="customers.html" class="nav-link relative flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-slate-700 hover:bg-slate-100"><span>Customers</span></a></li>
+        <li><a href="products.html" class="nav-link relative flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-slate-700 hover:bg-slate-100"><span>Products</span></a></li>
+        <li><a href="payments.html" class="nav-link relative flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-slate-700 hover:bg-slate-100"><span>Payments</span></a></li>
+        <li><a href="delivery.html" class="nav-link relative flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-slate-700 hover:bg-slate-100"><span>Delivery</span></a></li>
+      </ul>
+
+      <p class="px-3 pt-5 pb-1.5 text-[10px] font-semibold uppercase tracking-wider text-slate-400">System</p>
+      <ul class="space-y-0.5">
+        <li><a href="reports.html" class="nav-link relative flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-slate-700 hover:bg-slate-100"><span>Reports</span></a></li>
+        <li><a href="settings.html" class="nav-link relative flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-slate-700 hover:bg-slate-100"><span>Settings</span></a></li>
+      </ul>
+    </nav>
+
+    <div class="border-t border-slate-200 p-2.5">
+      <div class="flex items-center gap-2.5 p-2 rounded-lg">
+        <span class="relative shrink-0">
+          <span id="sidebar-avatar" class="inline-flex items-center justify-center w-9 h-9 rounded-full bg-brand-100 text-brand-700 text-sm font-semibold">A</span>
+          <span class="absolute bottom-0 right-0 w-2.5 h-2.5 rounded-full bg-green-500 ring-2 ring-white"></span>
+        </span>
+        <div class="min-w-0 flex-1">
+          <p id="sidebar-name" class="text-sm font-medium text-slate-900 truncate">Admin</p>
+          <p id="sidebar-role" class="text-xs text-slate-500 truncate">Loading…</p>
+        </div>
+      </div>
+    </div>
+  </aside>
+
+  <!-- Main wrapper -->
+  <div class="lg:pl-64 min-h-screen flex flex-col">
+
+    <!-- Navbar -->
+    <header id="app-navbar" class="sticky top-0 z-30 bg-white border-b border-slate-200">
+      <div class="flex items-center justify-between h-14 sm:h-16 px-3 sm:px-4 lg:px-6 gap-2">
+        <div class="flex items-center gap-2 sm:gap-3 min-w-0 flex-1">
+          <button type="button" id="sidebar-toggle"
+                  class="lg:hidden inline-flex items-center justify-center w-10 h-10 rounded-lg shrink-0 text-slate-600 hover:bg-slate-100"
+                  aria-label="Open menu" aria-controls="app-sidebar" aria-expanded="false">
+            <svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M4 6h16M4 12h16M4 18h16" /></svg>
+          </button>
+          <nav class="hidden lg:flex items-center gap-1.5 text-sm" aria-label="Breadcrumb">
+            <a href="dashboard.html" class="text-slate-500 hover:text-slate-700">Home</a>
+            <svg xmlns="http://www.w3.org/2000/svg" class="w-3.5 h-3.5 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7" /></svg>
+            <span class="font-medium text-slate-900">Products</span>
+          </nav>
+          <h1 class="lg:hidden text-base font-semibold text-slate-900 truncate">Products</h1>
+        </div>
+
+        <div class="flex items-center gap-1.5 shrink-0">
+          <div class="relative">
+            <button type="button" id="profile-btn"
+                    class="inline-flex items-center gap-2 pl-1 pr-1.5 sm:pr-2.5 py-1 rounded-lg hover:bg-slate-100">
+              <span class="relative">
+                <span id="profile-avatar" class="inline-flex items-center justify-center w-8 h-8 rounded-full bg-brand-100 text-brand-700 font-semibold text-sm">A</span>
+                <span class="absolute bottom-0 right-0 w-2 h-2 rounded-full bg-green-500 ring-2 ring-white"></span>
+              </span>
+              <span class="hidden sm:flex flex-col items-start leading-tight max-w-[120px]">
+                <span id="profile-name" class="text-sm font-medium text-slate-900 truncate">Admin</span>
+                <span id="profile-role" class="text-[11px] text-slate-500 truncate">Loading…</span>
+              </span>
+            </button>
+            <div id="profile-menu" class="hidden absolute right-0 mt-2 w-60 origin-top-right bg-white rounded-xl border border-slate-200 shadow-lg overflow-hidden">
+              <div class="px-4 py-3 border-b border-slate-100 bg-slate-50/50">
+                <p id="menu-name" class="text-sm font-semibold text-slate-900 truncate">Admin</p>
+                <p id="menu-email" class="text-xs text-slate-500 truncate">—</p>
+              </div>
+              <div class="border-t border-slate-100">
+                <button type="button" id="logout-btn" class="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-red-600 hover:bg-red-50">Logout</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </header>
+
+    <!-- Main -->
+    <main class="flex-1 px-3 sm:px-4 lg:px-6 py-4 sm:py-6">
+
+      <!-- Header row -->
+      <div class="mb-4 sm:mb-5 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+        <div>
+          <h2 class="text-xl sm:text-2xl font-bold text-slate-900">Products</h2>
+          <p class="text-sm text-slate-500 mt-0.5">
+            <span id="products-count-label">Loading…</span>
+          </p>
+        </div>
+        <div class="flex items-center gap-2">
+          <button type="button" id="refresh-btn"
+                  class="inline-flex items-center justify-center gap-2 px-3 py-2 rounded-lg border border-slate-300
+                         bg-white text-sm font-medium text-slate-700 hover:bg-slate-50
+                         disabled:opacity-60 disabled:cursor-not-allowed">
+            <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+            </svg>
+            <span class="hidden sm:inline">Refresh</span>
+          </button>
+          <button type="button" id="add-product-btn"
+                  class="inline-flex items-center gap-2 px-3 py-2 rounded-lg bg-brand-600 hover:bg-brand-700
+                         text-sm font-medium text-white">
+            <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4" />
+            </svg>
+            Add Product
+          </button>
+        </div>
+      </div>
+
+      <!-- Filter bar -->
+      <div class="bg-white rounded-xl border border-slate-200 p-3 sm:p-4 mb-4">
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-3">
+
+          <div class="lg:col-span-2">
+            <label for="search-input" class="sr-only">Search products</label>
+            <div class="relative">
+              <span class="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none">
+                <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-4.35-4.35M17 10.5a6.5 6.5 0 11-13 0 6.5 6.5 0 0113 0z" /></svg>
+              </span>
+              <input type="search" id="search-input" placeholder="Product name, SKU, code…"
+                     class="w-full pl-9 pr-3 py-2.5 sm:py-2 rounded-lg border border-slate-300 text-sm
+                            focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-brand-500" />
+            </div>
+          </div>
+
+          <div>
+            <label for="category-filter" class="sr-only">Category</label>
+            <select id="category-filter"
+                    class="w-full px-3 py-2.5 sm:py-2 rounded-lg border border-slate-300 text-sm bg-white
+                           focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-brand-500">
+              <option value="">All categories</option>
+            </select>
+          </div>
+
+          <div>
+            <label for="status-filter" class="sr-only">Status</label>
+            <select id="status-filter"
+                    class="w-full px-3 py-2.5 sm:py-2 rounded-lg border border-slate-300 text-sm bg-white
+                           focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-brand-500">
+              <option value="">All status</option>
+              <option value="active">Active</option>
+              <option value="inactive">Inactive</option>
+              <option value="low-stock">Low stock</option>
+              <option value="out-of-stock">Out of stock</option>
+            </select>
+          </div>
+        </div>
+      </div>
+
+      <!-- Products container -->
+      <div class="bg-white rounded-xl border border-slate-200 overflow-hidden">
+
+        <!-- Desktop table -->
+        <div class="orders-table-wrap">
+          <div class="overflow-x-auto">
+            <table class="orders-table" aria-label="Products list">
+              <thead>
+                <tr>
+                  <th>Code</th>
+                  <th>Product</th>
+                  <th>Category</th>
+                  <th>Stock</th>
+                  <th>Selling</th>
+                  <th>Status</th>
+                  <th class="text-right">Actions</th>
+                </tr>
+              </thead>
+              <tbody id="products-tbody"></tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Mobile cards -->
+        <div class="orders-cards divide-y divide-slate-100" id="products-cards"></div>
+
+        <!-- Empty -->
+        <div id="products-empty" class="hidden p-8 sm:p-12 text-center">
+          <div class="inline-flex items-center justify-center w-12 h-12 rounded-full bg-slate-100 text-slate-400 mb-3">
+            <svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
+            </svg>
+          </div>
+          <p class="text-sm font-medium text-slate-700" id="empty-title">No products yet</p>
+          <p class="text-xs text-slate-500 mt-0.5" id="empty-desc">Add your first product to get started.</p>
+          <button type="button" id="empty-add-btn"
+                  class="inline-flex items-center gap-2 mt-4 px-3 py-2 rounded-lg bg-brand-600 hover:bg-brand-700 text-sm font-medium text-white">
+            <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4" />
+            </svg>
+            Add product
+          </button>
+        </div>
+
+        <!-- Load more -->
+        <div id="load-more-wrap" class="hidden px-4 py-3 border-t border-slate-100 text-center">
+          <button type="button" id="load-more-btn"
+                  class="inline-flex items-center gap-2 px-4 py-2 rounded-lg border border-slate-300
+                         bg-white text-sm font-medium text-slate-700 hover:bg-slate-50
+                         disabled:opacity-60 disabled:cursor-not-allowed">
+            <span class="btn-label">Load more</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Stats footer -->
+      <div class="mt-4 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-slate-500">
+        <span>Showing <span id="shown-count" class="font-medium text-slate-700">0</span> products</span>
+        <span class="w-1 h-1 rounded-full bg-slate-300"></span>
+        <span>Total loaded: <span id="total-count" class="font-medium text-slate-700">0</span></span>
+      </div>
+    </main>
+
+    <footer class="border-t border-slate-200 bg-white">
+      <div class="px-4 lg:px-6 py-4 text-xs text-slate-500 text-center sm:text-left sm:flex sm:items-center sm:justify-between">
+        <p>© <span id="footer-year"></span> Order Management System</p>
+      </div>
+    </footer>
+  </div>
+
+  <!-- ══════════════════════════════════════════════════════
+       PRODUCT MODAL (Add + Edit)
+       ══════════════════════════════════════════════════════ -->
+  <div id="product-modal" class="modal-backdrop" role="dialog" aria-modal="true"
+       aria-labelledby="product-modal-title" aria-hidden="true">
+    <div class="modal-panel" role="document">
+
+      <div class="modal-grab"></div>
+
+      <!-- Header -->
+      <div class="flex items-start justify-between gap-3 px-5 sm:px-6 pt-4 sm:pt-5 pb-3 border-b border-slate-100">
+        <div class="flex items-center gap-3 min-w-0">
+          <span class="inline-flex items-center justify-center w-10 h-10 rounded-xl bg-brand-50 text-brand-600 shrink-0">
+            <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
+            </svg>
+          </span>
+          <div class="min-w-0">
+            <h2 id="product-modal-title" class="text-base sm:text-lg font-semibold text-slate-900">Add Product</h2>
+            <p id="product-modal-subtitle" class="text-xs text-slate-500 mt-0.5">Code auto-generates (PRD-00001).</p>
+          </div>
+        </div>
+        <button type="button" id="product-modal-close"
+                class="shrink-0 inline-flex items-center justify-center w-9 h-9 rounded-lg
+                       text-slate-400 hover:bg-slate-100 hover:text-slate-600"
+                aria-label="Close dialog">
+          <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+          </svg>
+        </button>
+      </div>
+
+      <!-- Body -->
+      <div class="px-5 sm:px-6 py-4 overflow-y-auto">
+        <form id="product-modal-form" novalidate autocomplete="off">
+
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+
+            <div class="sm:col-span-2">
+              <label for="modal-product-name" class="block text-sm font-medium text-slate-700 mb-1.5">
+                Product name <span class="text-red-500">*</span>
+              </label>
+              <input type="text" id="modal-product-name" required maxlength="100"
+                     placeholder="e.g. T-Shirt (Blue)"
+                     class="w-full px-3 py-2.5 rounded-lg border border-slate-300 text-sm
+                            focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-brand-500" />
+            </div>
+
+            <div>
+              <label for="modal-sku" class="block text-sm font-medium text-slate-700 mb-1.5">SKU</label>
+              <input type="text" id="modal-sku" maxlength="50"
+                     placeholder="e.g. TS-001"
+                     class="w-full px-3 py-2.5 rounded-lg border border-slate-300 text-sm
+                            focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-brand-500" />
+            </div>
+
+            <div>
+              <label for="modal-category" class="block text-sm font-medium text-slate-700 mb-1.5">Category</label>
+              <input type="text" id="modal-category" maxlength="50"
+                     placeholder="e.g. Apparel"
+                     list="category-suggestions"
+                     class="w-full px-3 py-2.5 rounded-lg border border-slate-300 text-sm
+                            focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-brand-500" />
+              <datalist id="category-suggestions"></datalist>
+            </div>
+
+            <div>
+              <label for="modal-purchase-price" class="block text-sm font-medium text-slate-700 mb-1.5">
+                Purchase price (৳)
+              </label>
+              <input type="number" id="modal-purchase-price" min="0" step="0.01" value="0"
+                     class="w-full px-3 py-2.5 rounded-lg border border-slate-300 text-sm text-right
+                            focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-brand-500" />
+            </div>
+
+            <div>
+              <label for="modal-selling-price" class="block text-sm font-medium text-slate-700 mb-1.5">
+                Selling price (৳) <span class="text-red-500">*</span>
+              </label>
+              <input type="number" id="modal-selling-price" required min="0" step="0.01" value="0"
+                     class="w-full px-3 py-2.5 rounded-lg border border-slate-300 text-sm text-right
+                            focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-brand-500" />
+            </div>
+
+            <div>
+              <label for="modal-stock" class="block text-sm font-medium text-slate-700 mb-1.5">
+                Stock
+              </label>
+              <input type="number" id="modal-stock" min="0" step="1" value="0"
+                     class="w-full px-3 py-2.5 rounded-lg border border-slate-300 text-sm text-right
+                            focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-brand-500" />
+            </div>
+
+            <div>
+              <label for="modal-unit" class="block text-sm font-medium text-slate-700 mb-1.5">Unit</label>
+              <select id="modal-unit"
+                      class="w-full px-3 py-2.5 rounded-lg border border-slate-300 text-sm bg-white
+                             focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-brand-500">
+                <option value="pcs">pcs</option>
+                <option value="kg">kg</option>
+                <option value="gm">gm</option>
+                <option value="ltr">ltr</option>
+                <option value="box">box</option>
+                <option value="pack">pack</option>
+                <option value="dozen">dozen</option>
+              </select>
+            </div>
+
+            <div class="sm:col-span-2">
+              <label for="modal-low-stock" class="block text-sm font-medium text-slate-700 mb-1.5">
+                Low stock alert threshold
+              </label>
+              <input type="number" id="modal-low-stock" min="0" step="1" value="10"
+                     class="w-full px-3 py-2.5 rounded-lg border border-slate-300 text-sm text-right
+                            focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-brand-500" />
+              <p class="text-xs text-slate-500 mt-1">Stock below this value will be flagged.</p>
+            </div>
+
+            <div class="sm:col-span-2">
+              <label class="block text-sm font-medium text-slate-700 mb-1.5">Status</label>
+              <div class="flex items-center gap-4">
+                <label class="inline-flex items-center gap-2 text-sm cursor-pointer">
+                  <input type="radio" name="status" value="active" checked
+                         class="w-4 h-4 text-brand-600 focus:ring-brand-500" />
+                  <span>Active</span>
+                </label>
+                <label class="inline-flex items-center gap-2 text-sm cursor-pointer">
+                  <input type="radio" name="status" value="inactive"
+                         class="w-4 h-4 text-brand-600 focus:ring-brand-500" />
+                  <span>Inactive</span>
+                </label>
+              </div>
+            </div>
+          </div>
+        </form>
+      </div>
+
+      <!-- Footer -->
+      <div class="flex items-center justify-end gap-2 px-5 sm:px-6 py-4 border-t border-slate-100">
+        <button type="button" id="product-modal-cancel"
+                class="inline-flex items-center justify-center px-4 py-2.5 rounded-lg
+                       text-sm font-medium text-slate-700 hover:bg-slate-100">
+          Cancel
+        </button>
+        <button type="button" id="product-modal-save"
+                class="inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg
+                       bg-brand-600 hover:bg-brand-700 text-white text-sm font-medium
+                       disabled:opacity-60 disabled:cursor-not-allowed">
+          <span class="save-label">Save Product</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════════════════════
+       CONFIRM DELETE MODAL
+       ══════════════════════════════════════════════════════ -->
+  <div id="confirm-modal" class="modal-backdrop" role="dialog" aria-modal="true"
+       aria-labelledby="confirm-modal-title" aria-hidden="true" style="z-index: 110;">
+    <div class="modal-panel" role="document" style="max-width: 400px;">
+      <div class="px-5 sm:px-6 pt-6 pb-4 text-center">
+        <span class="inline-flex items-center justify-center w-12 h-12 rounded-full bg-red-50 text-red-600 mb-3">
+          <svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01M4.93 19h14.14a2 2 0 001.74-2.97L13.74 4.97a2 2 0 00-3.48 0L3.2 16.03A2 2 0 004.93 19z" />
+          </svg>
+        </span>
+        <h3 id="confirm-modal-title" class="text-base font-semibold text-slate-900">Delete this product?</h3>
+        <p class="text-sm text-slate-500 mt-1">This action cannot be undone.</p>
+      </div>
+
+      <div class="flex items-center gap-2 px-5 sm:px-6 pb-5">
+        <button type="button" id="confirm-cancel"
+                class="flex-1 inline-flex items-center justify-center px-4 py-2.5 rounded-lg
+                       text-sm font-medium text-slate-700 bg-slate-100 hover:bg-slate-200">
+          Cancel
+        </button>
+        <button type="button" id="confirm-delete"
+                class="flex-1 inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg
+                       bg-red-600 hover:bg-red-700 text-white text-sm font-medium
+                       disabled:opacity-60 disabled:cursor-not-allowed">
+          <span class="btn-label">Delete</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast -->
+  <div id="toast-container"
+       class="fixed top-4 right-4 left-4 sm:left-auto sm:top-6 sm:right-6 z-[9999]
+              flex flex-col gap-2 pointer-events-none"
+       role="region" aria-label="Notifications" aria-live="polite"></div>
+
+  <script type="module">
+    import { requireAuth, logoutUser } from "../assets/js/firebase/auth.js";
+    import { toast } from "../assets/js/utils/toast.js";
+    import {
+      queryCollectionCached,
+      createProductAtomic,
+      updateProductAtomic,
+      deleteDocument,
+      cacheClear,
+    } from "../assets/js/firebase/firestore.js";
+    import {
+      formatCurrency, debounce,
+      escapeHtml,
+    } from "../assets/js/utils/helpers.js";
+
+    /* ─── AUTH GUARD ──────────────────────────────────── */
+    let currentUser, currentProfile;
+    try {
+      const a = await requireAuth("../../login.html");
+      currentUser = a.user;
+      currentProfile = a.profile;
+    } catch { throw new Error("Unauthorized"); }
+
+    /* ─── USER UI ─────────────────────────────────────── */
+    const userName  = currentProfile?.name || currentUser.displayName || "User";
+    const userRole  = currentProfile?.role || "staff";
+    const userEmail = currentUser.email || "";
+    const initial   = (userName.charAt(0) || "U").toUpperCase();
+
+    document.getElementById("profile-avatar").textContent = initial;
+    document.getElementById("profile-name").textContent = userName;
+    document.getElementById("profile-role").textContent = capitalize(userRole);
+    document.getElementById("menu-name").textContent = userName;
+    document.getElementById("menu-email").textContent = userEmail;
+    document.getElementById("sidebar-avatar").textContent = initial;
+    document.getElementById("sidebar-name").textContent = userName;
+    document.getElementById("sidebar-role").textContent = capitalize(userRole);
+    document.getElementById("footer-year").textContent = new Date().getFullYear();
+
+    /* ─── SIDEBAR ─────────────────────────────────────── */
+    const sidebar = document.getElementById("app-sidebar");
+    const overlay = document.getElementById("sidebar-overlay");
+    const toggleBtn = document.getElementById("sidebar-toggle");
+    const closeBtn  = document.getElementById("sidebar-close");
+    const openSidebar  = () => { sidebar.classList.add("is-open"); overlay.classList.add("is-visible"); document.body.classList.add("no-scroll"); toggleBtn.setAttribute("aria-expanded", "true"); };
+    const closeSidebar = () => { sidebar.classList.remove("is-open"); overlay.classList.remove("is-visible"); document.body.classList.remove("no-scroll"); toggleBtn.setAttribute("aria-expanded", "false"); };
+    toggleBtn.addEventListener("click", openSidebar);
+    closeBtn.addEventListener("click", closeSidebar);
+    overlay.addEventListener("click", closeSidebar);
+    sidebar.querySelectorAll("a.nav-link").forEach((a) => a.addEventListener("click", () => { if (innerWidth < 1024) closeSidebar(); }));
+
+    const currentPage = location.pathname.split("/").pop() || "products.html";
+    sidebar.querySelector(`a[href="${currentPage}"]`)?.classList.add("active");
+
+    /* ─── PROFILE MENU ────────────────────────────────── */
+    const profileBtn  = document.getElementById("profile-btn");
+    const profileMenu = document.getElementById("profile-menu");
+    profileBtn.addEventListener("click", (e) => { e.stopPropagation(); profileMenu.classList.toggle("hidden"); });
+    document.addEventListener("click", (e) => { if (!profileMenu.contains(e.target) && !profileBtn.contains(e.target)) profileMenu.classList.add("hidden"); });
+    document.addEventListener("keydown", (e) => {
+      if (e.key === "Escape") {
+        closeSidebar();
+        profileMenu.classList.add("hidden");
+      }
+    });
+
+    document.getElementById("logout-btn").addEventListener("click", async () => {
+      try { await logoutUser(); toast.success("Logged out"); setTimeout(() => location.replace("../../login.html"), 300); }
+      catch { toast.error("Logout failed"); }
+    });
+
+    /* ─── STATE ───────────────────────────────────────── */
+    const PAGE_SIZE = 25;
+    const state = {
+      items: [],
+      lastDoc: null,
+      hasMore: false,
+      loading: false,
+      search: "",
+      categoryFilter: "",
+      statusFilter: "",
+      editingId: null,       // null = add, id = edit
+      deletingId: null,
+      categories: new Set(),
+    };
+
+    /* ─── DOM REFS ────────────────────────────────────── */
+    const tbody = document.getElementById("products-tbody");
+    const cardsWrap = document.getElementById("products-cards");
+    const emptyEl = document.getElementById("products-empty");
+    const emptyTitle = document.getElementById("empty-title");
+    const emptyDesc = document.getElementById("empty-desc");
+    const loadMoreWrap = document.getElementById("load-more-wrap");
+    const loadMoreBtn = document.getElementById("load-more-btn");
+    const searchInput = document.getElementById("search-input");
+    const categoryFilter = document.getElementById("category-filter");
+    const statusFilter = document.getElementById("status-filter");
+    const categoryDatalist = document.getElementById("category-suggestions");
+    const shownCount = document.getElementById("shown-count");
+    const totalCountEl = document.getElementById("total-count");
+    const countLabel = document.getElementById("products-count-label");
+    const refreshBtn = document.getElementById("refresh-btn");
+    const addProductBtn = document.getElementById("add-product-btn");
+    const emptyAddBtn = document.getElementById("empty-add-btn");
+
+    /* ════════════════════════════════════════════════════
+       LOAD PRODUCTS
+       ════════════════════════════════════════════════════ */
+    async function loadProducts({ reset = false } = {}) {
+      if (state.loading) return;
+      state.loading = true;
+      refreshBtn.disabled = true;
+
+      if (reset) {
+        state.items = [];
+        state.lastDoc = null;
+      }
+
+      const filters = [];
+      // Only active filter via Firestore if user selected
+      if (state.statusFilter === "active" || state.statusFilter === "inactive") {
+        filters.push(["status", "==", state.statusFilter]);
+      }
+
+      let result;
+      try {
+        result = await queryCollectionCached("products", {
+          filters,
+          order: [["name", "asc"]],
+          limitCount: PAGE_SIZE,
+          cursor: reset ? null : state.lastDoc,
+          cacheTtlMs: 60000,   // 60s cache for products
+        });
+      } catch (err) {
+        console.error("Load products failed:", err);
+        toast.error("Could not load products.");
+        state.loading = false;
+        refreshBtn.disabled = false;
+        return;
+      }
+
+      const existingIds = new Set(state.items.map((p) => p.id));
+      const fresh = result.items.filter((p) => !existingIds.has(p.id));
+
+      state.items = state.items.concat(fresh);
+      state.lastDoc = result.lastDoc;
+      state.hasMore = result.hasMore;
+      state.loading = false;
+      refreshBtn.disabled = false;
+
+      // Collect categories for filter dropdown
+      state.items.forEach((p) => { if (p.category) state.categories.add(p.category); });
+      renderCategoryOptions();
+
+      render();
+    }
+
+    /* ─── RENDER ──────────────────────────────────────── */
+    function render() {
+      const filtered = applyClientFilters(state.items);
+
+      shownCount.textContent = filtered.length;
+      totalCountEl.textContent = state.items.length;
+
+      if (state.search || state.categoryFilter || state.statusFilter) {
+        countLabel.textContent = `${filtered.length} of ${state.items.length} shown`;
+      } else {
+        countLabel.textContent = state.items.length === 0
+          ? "No products yet"
+          : `${state.items.length} product${state.items.length > 1 ? "s" : ""} loaded`;
+      }
+
+      if (filtered.length === 0) {
+        tbody.innerHTML = "";
+        cardsWrap.innerHTML = "";
+        emptyEl.classList.remove("hidden");
+        loadMoreWrap.classList.add("hidden");
+
+        if (state.search || state.categoryFilter || state.statusFilter) {
+          emptyTitle.textContent = "No matching products";
+          emptyDesc.textContent = "Try adjusting filters or search term.";
+          emptyAddBtn.classList.add("hidden");
+        } else {
+          emptyTitle.textContent = "No products yet";
+          emptyDesc.textContent = "Add your first product to get started.";
+          emptyAddBtn.classList.remove("hidden");
+        }
+        return;
+      }
+
+      emptyEl.classList.add("hidden");
+      tbody.innerHTML = filtered.map(renderRow).join("");
+      cardsWrap.innerHTML = filtered.map(renderCard).join("");
+      loadMoreWrap.classList.toggle("hidden", !state.hasMore);
+    }
+
+    /* ─── CLIENT FILTER ───────────────────────────────── */
+    function applyClientFilters(items) {
+      return items.filter((p) => {
+        // Search
+        if (state.search) {
+          const q = state.search.toLowerCase().trim();
+          const hay = [p.name, p.sku, p.code, p.category].filter(Boolean).join(" ").toLowerCase();
+          if (!hay.includes(q)) return false;
+        }
+        // Category
+        if (state.categoryFilter && p.category !== state.categoryFilter) return false;
+        // Status (low-stock / out-of-stock are client-side computed)
+        if (state.statusFilter === "low-stock") {
+          const threshold = p.lowStockThreshold || 10;
+          if (!(p.stock > 0 && p.stock <= threshold)) return false;
+        } else if (state.statusFilter === "out-of-stock") {
+          if ((p.stock || 0) !== 0) return false;
+        }
+        return true;
+      });
+    }
+
+    /* ─── STOCK BADGE ─────────────────────────────────── */
+    function stockBadge(p) {
+      const stock = Number(p.stock) || 0;
+      const threshold = Number(p.lowStockThreshold) || 10;
+      if (stock === 0) return `<span class="badge badge-cancelled"><span class="badge-dot"></span>Out</span>`;
+      if (stock <= threshold) return `<span class="badge badge-pending"><span class="badge-dot"></span>Low (${stock})</span>`;
+      return `<span class="badge badge-delivered"><span class="badge-dot"></span>${stock} ${p.unit || "pcs"}</span>`;
+    }
+
+    function statusBadge(status) {
+      return status === "inactive"
+        ? `<span class="badge badge-returned"><span class="badge-dot"></span>Inactive</span>`
+        : `<span class="badge badge-confirmed"><span class="badge-dot"></span>Active</span>`;
+    }
+
+    /* ─── ROW / CARD ──────────────────────────────────── */
+    function renderRow(p) {
+      const code = escapeHtml(p.code || p.id.slice(0, 8));
+      const name = escapeHtml(p.name || "—");
+      const sku = p.sku ? `SKU: ${escapeHtml(p.sku)}` : "";
+      const category = escapeHtml(p.category || "—");
+      const selling = formatCurrency(p.sellingPrice || 0);
+
+      return `
+        <tr data-id="${p.id}">
+          <td class="font-mono text-xs text-slate-600">${code}</td>
+          <td>
+            <div class="min-w-0">
+              <p class="text-sm font-medium text-slate-800 truncate">${name}</p>
+              ${sku ? `<p class="text-xs text-slate-500">${sku}</p>` : ""}
+            </div>
+          </td>
+          <td class="text-sm text-slate-600">${category}</td>
+          <td>${stockBadge(p)}</td>
+          <td class="font-semibold text-slate-900">${selling}</td>
+          <td>${statusBadge(p.status)}</td>
+          <td class="text-right">
+            <div class="inline-flex items-center gap-1">
+              <button class="product-edit-btn inline-flex items-center gap-1 px-2.5 py-1.5 rounded-md text-xs font-medium
+                             text-slate-700 hover:bg-slate-100 border border-slate-200"
+                      data-id="${p.id}">Edit</button>
+              <button class="product-delete-btn inline-flex items-center gap-1 px-2.5 py-1.5 rounded-md text-xs font-medium
+                             text-red-600 hover:bg-red-50 border border-red-200"
+                      data-id="${p.id}">Delete</button>
+            </div>
+          </td>
+        </tr>
+      `;
+    }
+
+    function renderCard(p) {
+      const code = escapeHtml(p.code || p.id.slice(0, 8));
+      const name = escapeHtml(p.name || "—");
+      const sku = p.sku ? `SKU: ${escapeHtml(p.sku)}` : "";
+      const category = escapeHtml(p.category || "");
+      const selling = formatCurrency(p.sellingPrice || 0);
+
+      return `
+        <div class="p-4" data-id="${p.id}">
+          <div class="flex items-start justify-between gap-3 mb-2">
+            <div class="min-w-0">
+              <p class="text-sm font-semibold text-slate-900 truncate">${name}</p>
+              <p class="text-xs text-slate-500 mt-0.5">${code}${sku ? ` · ${sku}` : ""}</p>
+            </div>
+            ${statusBadge(p.status)}
+          </div>
+          <div class="flex items-center justify-between gap-3 mb-3">
+            <div class="text-xs text-slate-600">
+              ${category ? `<p>${category}</p>` : ""}
+              <div class="mt-1">${stockBadge(p)}</div>
+            </div>
+            <p class="text-base font-bold text-slate-900 whitespace-nowrap">${selling}</p>
+          </div>
+          <div class="flex items-center gap-2 pt-3 border-t border-slate-100">
+            <button class="product-edit-btn flex-1 inline-flex items-center justify-center gap-1 px-3 py-2 rounded-md text-xs font-medium
+                           text-slate-700 hover:bg-slate-100 border border-slate-200"
+                    data-id="${p.id}">Edit</button>
+            <button class="product-delete-btn flex-1 inline-flex items-center justify-center gap-1 px-3 py-2 rounded-md text-xs font-medium
+                           text-red-600 hover:bg-red-50 border border-red-200"
+                    data-id="${p.id}">Delete</button>
+          </div>
+        </div>
+      `;
+    }
+
+    /* ─── CATEGORY OPTIONS ────────────────────────────── */
+    function renderCategoryOptions() {
+      const cats = Array.from(state.categories).sort();
+      categoryFilter.innerHTML = `<option value="">All categories</option>` +
+        cats.map((c) => `<option value="${escapeHtml(c)}">${escapeHtml(c)}</option>`).join("");
+      categoryDatalist.innerHTML = cats.map((c) => `<option value="${escapeHtml(c)}">`).join("");
+    }
+
+    /* ════════════════════════════════════════════════════
+       PRODUCT MODAL (Add / Edit)
+       ════════════════════════════════════════════════════ */
+    const productModal = document.getElementById("product-modal");
+    const productModalForm = document.getElementById("product-modal-form");
+    const productModalTitle = document.getElementById("product-modal-title");
+    const productModalSub = document.getElementById("product-modal-subtitle");
+    const modalProductName = document.getElementById("modal-product-name");
+    const modalSku = document.getElementById("modal-sku");
+    const modalCategory = document.getElementById("modal-category");
+    const modalPurchasePrice = document.getElementById("modal-purchase-price");
+    const modalSellingPrice = document.getElementById("modal-selling-price");
+    const modalStock = document.getElementById("modal-stock");
+    const modalUnit = document.getElementById("modal-unit");
+    const modalLowStock = document.getElementById("modal-low-stock");
+    const modalSaveBtn = document.getElementById("product-modal-save");
+    const modalCancelBtn = document.getElementById("product-modal-cancel");
+    const modalCloseBtn = document.getElementById("product-modal-close");
+
+    let lastFocusedEl = null;
+
+    function openProductModal(mode, product = null) {
+      lastFocusedEl = document.activeElement;
+      state.editingId = mode === "edit" ? product.id : null;
+
+      productModalForm.reset();
+
+      if (mode === "edit" && product) {
+        productModalTitle.textContent = "Edit Product";
+        productModalSub.textContent = product.code || "";
+        modalProductName.value = product.name || "";
+        modalSku.value = product.sku || "";
+        modalCategory.value = product.category || "";
+        modalPurchasePrice.value = product.purchasePrice ?? 0;
+        modalSellingPrice.value = product.sellingPrice ?? 0;
+        modalStock.value = product.stock ?? 0;
+        modalUnit.value = product.unit || "pcs";
+        modalLowStock.value = product.lowStockThreshold ?? 10;
+        const statusRadio = productModalForm.querySelector(`input[name="status"][value="${product.status || "active"}"]`);
+        if (statusRadio) statusRadio.checked = true;
+        modalSaveBtn.querySelector(".save-label").textContent = "Update Product";
+      } else {
+        productModalTitle.textContent = "Add Product";
+        productModalSub.textContent = "Code auto-generates (PRD-00001).";
+        modalSaveBtn.querySelector(".save-label").textContent = "Save Product";
+      }
+
+      productModal.classList.add("is-open");
+      productModal.setAttribute("aria-hidden", "false");
+      document.body.classList.add("no-scroll");
+      setTimeout(() => modalProductName.focus(), 80);
+    }
+
+    function closeProductModal() {
+      productModal.classList.remove("is-open");
+      productModal.setAttribute("aria-hidden", "true");
+      document.body.classList.remove("no-scroll");
+      state.editingId = null;
+      if (lastFocusedEl && typeof lastFocusedEl.focus === "function") lastFocusedEl.focus();
+    }
+
+    addProductBtn.addEventListener("click", () => openProductModal("add"));
+    emptyAddBtn.addEventListener("click", () => openProductModal("add"));
+    modalCancelBtn.addEventListener("click", closeProductModal);
+    modalCloseBtn.addEventListener("click", closeProductModal);
+    productModal.addEventListener("click", (e) => { if (e.target === productModal) closeProductModal(); });
+    document.addEventListener("keydown", (e) => {
+      if (e.key === "Escape" && productModal.classList.contains("is-open")) closeProductModal();
+      if (e.key === "Escape" && confirmModal.classList.contains("is-open")) closeConfirmModal();
+    });
+
+    /* ─── SAVE PRODUCT ────────────────────────────────── */
+    modalSaveBtn.addEventListener("click", async () => {
+      const name = modalProductName.value.trim();
+      const sellingPrice = Number(modalSellingPrice.value) || 0;
+
+      if (!name) { toast.error("Product name is required."); modalProductName.focus(); return; }
+      if (sellingPrice <= 0) { toast.error("Selling price must be greater than 0."); modalSellingPrice.focus(); return; }
+
+      const statusRadio = productModalForm.querySelector('input[name="status"]:checked');
+      const payload = {
+        name,
+        sku: modalSku.value.trim(),
+        category: modalCategory.value.trim(),
+        purchasePrice: Number(modalPurchasePrice.value) || 0,
+        sellingPrice,
+        stock: Number(modalStock.value) || 0,
+        unit: modalUnit.value,
+        lowStockThreshold: Number(modalLowStock.value) || 10,
+        status: statusRadio ? statusRadio.value : "active",
+      };
+
+      modalSaveBtn.disabled = true;
+      const labelEl = modalSaveBtn.querySelector(".save-label");
+      const originalLabel = labelEl.textContent;
+      labelEl.textContent = state.editingId ? "Updating…" : "Saving…";
+
+      try {
+        if (state.editingId) {
+          await updateProductAtomic(state.editingId, payload);
+          toast.success("Product updated.");
+        } else {
+          const { code } = await createProductAtomic(payload, currentUser.uid);
+          toast.success(`Product created — ${code}`);
+        }
+        cacheClear("q:products");
+        closeProductModal();
+        await loadProducts({ reset: true });
+      } catch (err) {
+        console.error("Save product failed:", err);
+        toast.error("Failed to save product. Please try again.");
+      } finally {
+        modalSaveBtn.disabled = false;
+        labelEl.textContent = originalLabel;
+      }
+    });
+
+    productModalForm.addEventListener("submit", (e) => {
+      e.preventDefault();
+      modalSaveBtn.click();
+    });
+
+    /* ════════════════════════════════════════════════════
+       DELEGATED CLICK — edit/delete
+       ════════════════════════════════════════════════════ */
+    document.addEventListener("click", (e) => {
+      const editBtn = e.target.closest(".product-edit-btn");
+      if (editBtn) {
+        const p = state.items.find((x) => x.id === editBtn.dataset.id);
+        if (p) openProductModal("edit", p);
+        return;
+      }
+      const delBtn = e.target.closest(".product-delete-btn");
+      if (delBtn) {
+        state.deletingId = delBtn.dataset.id;
+        openConfirmModal();
+        return;
+      }
+    });
+
+    /* ─── CONFIRM DELETE MODAL ────────────────────────── */
+    const confirmModal = document.getElementById("confirm-modal");
+    const confirmDeleteBtn = document.getElementById("confirm-delete");
+    const confirmCancelBtn = document.getElementById("confirm-cancel");
+
+    function openConfirmModal() {
+      confirmModal.classList.add("is-open");
+      confirmModal.setAttribute("aria-hidden", "false");
+    }
+    function closeConfirmModal() {
+      confirmModal.classList.remove("is-open");
+      confirmModal.setAttribute("aria-hidden", "true");
+      state.deletingId = null;
+    }
+
+    confirmCancelBtn.addEventListener("click", closeConfirmModal);
+    confirmModal.addEventListener("click", (e) => { if (e.target === confirmModal) closeConfirmModal(); });
+
+    confirmDeleteBtn.addEventListener("click", async () => {
+      if (!state.deletingId) return;
+
+      confirmDeleteBtn.disabled = true;
+      const labelEl = confirmDeleteBtn.querySelector(".btn-label");
+      const original = labelEl.textContent;
+      labelEl.textContent = "Deleting…";
+
+      try {
+        await deleteDocument("products", state.deletingId);
+        cacheClear("q:products");
+        state.items = state.items.filter((p) => p.id !== state.deletingId);
+        render();
+        closeConfirmModal();
+        toast.success("Product deleted.");
+      } catch (err) {
+        console.error("Delete failed:", err);
+        toast.error("Failed to delete product.");
+      } finally {
+        confirmDeleteBtn.disabled = false;
+        labelEl.textContent = original;
+      }
+    });
+
+    /* ════════════════════════════════════════════════════
+       FILTER EVENT HANDLERS
+       ════════════════════════════════════════════════════ */
+    searchInput.addEventListener("input", debounce(() => {
+      state.search = searchInput.value.trim();
+      render();
+    }, 200));
+
+    categoryFilter.addEventListener("change", () => {
+      state.categoryFilter = categoryFilter.value;
+      render();
+    });
+
+    statusFilter.addEventListener("change", () => {
+      state.statusFilter = statusFilter.value;
+      // Only active/inactive need server refetch, rest are client-side
+      if (state.statusFilter === "active" || state.statusFilter === "inactive") {
+        loadProducts({ reset: true });
+      } else {
+        render();
+      }
+    });
+
+    loadMoreBtn.addEventListener("click", () => {
+      const label = loadMoreBtn.querySelector(".btn-label");
+      loadMoreBtn.disabled = true;
+      label.textContent = "Loading…";
+      loadProducts().finally(() => {
+        loadMoreBtn.disabled = false;
+        label.textContent = "Load more";
+      });
+    });
+
+    refreshBtn.addEventListener("click", () => {
+      cacheClear("q:products");
+      loadProducts({ reset: true });
+      toast.info("Refreshed");
+    });
+
+    /* ─── BOOTSTRAP ───────────────────────────────────── */
+    (async function init() {
+      await loadProducts({ reset: true });
+    })();
+
+    /* ─── HELPERS ─────────────────────────────────────── */
+    function capitalize(s) { return s ? s.charAt(0).toUpperCase() + s.slice(1) : ""; }
+  </script>
+</body>
+</html>

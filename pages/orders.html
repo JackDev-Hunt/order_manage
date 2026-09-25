@@ -1,0 +1,1035 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <meta name="theme-color" content="#2563eb" />
+  <title>Orders — Order Management</title>
+
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            brand: { 50:"#eff6ff",100:"#dbeafe",200:"#bfdbfe",500:"#3b82f6",600:"#2563eb",700:"#1d4ed8",900:"#1e3a8a" }
+          },
+          fontFamily: { sans: ["Inter","system-ui","sans-serif"] },
+          transitionDuration: { "250": "250ms" }
+        }
+      }
+    };
+  </script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../assets/css/style.css" />
+
+  <!-- ─── Modal styles ─── -->
+  <style>
+    .modal-backdrop {
+      position: fixed; inset: 0; z-index: 100;
+      background: rgba(15, 23, 42, 0.55);
+      backdrop-filter: blur(2px); -webkit-backdrop-filter: blur(2px);
+      display: none; align-items: flex-end; justify-content: center;
+      animation: modalBackdropFade 0.2s ease-out;
+    }
+    .modal-backdrop.is-open { display: flex; }
+    @media (min-width: 640px) { .modal-backdrop { align-items: center; padding: 1.5rem; } }
+    .modal-panel {
+      width: 100%; max-width: 100%; background: #fff;
+      border-radius: 20px 20px 0 0; max-height: 92vh;
+      overflow: hidden; display: flex; flex-direction: column;
+      box-shadow: 0 -10px 30px rgba(15, 23, 42, 0.15);
+      animation: modalSlideUp 0.28s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    @media (min-width: 640px) {
+      .modal-panel {
+        max-width: 520px; border-radius: 16px;
+        box-shadow: 0 20px 60px rgba(15, 23, 42, 0.25);
+        animation: modalFadeScale 0.22s cubic-bezier(0.16, 1, 0.3, 1);
+      }
+    }
+    @keyframes modalSlideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
+    @keyframes modalFadeScale { from { opacity: 0; transform: scale(0.96); } to { opacity: 1; transform: scale(1); } }
+    @keyframes modalBackdropFade { from { opacity: 0; } to { opacity: 1; } }
+    .modal-grab { width: 40px; height: 4px; border-radius: 9999px; background: #cbd5e1; margin: 8px auto 0; }
+    @media (min-width: 640px) { .modal-grab { display: none; } }
+  </style>
+</head>
+
+<body class="bg-slate-50 min-h-screen">
+
+  <!-- Sidebar overlay -->
+  <div id="sidebar-overlay"
+       class="fixed inset-0 z-40 bg-slate-900/60 backdrop-blur-sm
+              opacity-0 pointer-events-none transition-opacity duration-[250ms] lg:hidden"
+       aria-hidden="true"></div>
+
+  <!-- Sidebar -->
+  <aside id="app-sidebar"
+         class="sidebar-drawer fixed top-0 left-0 bottom-0 z-50 w-64 bg-white border-r border-slate-200 flex flex-col"
+         aria-label="Main navigation">
+
+    <div class="flex items-center justify-between h-14 px-4 border-b border-slate-200 lg:hidden">
+      <a href="dashboard.html" class="flex items-center gap-2 min-w-0">
+        <span class="inline-flex items-center justify-center w-9 h-9 rounded-lg bg-brand-600 text-white shrink-0">
+          <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
+          </svg>
+        </span>
+        <span class="text-base font-semibold text-slate-900">Order<span class="text-brand-600">Mng</span></span>
+      </a>
+      <button type="button" id="sidebar-close"
+              class="inline-flex items-center justify-center w-10 h-10 rounded-lg text-slate-600 hover:bg-slate-100"
+              aria-label="Close menu">
+        <svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+        </svg>
+      </button>
+    </div>
+
+    <div class="hidden lg:flex items-center gap-2.5 h-16 px-4 border-b border-slate-200">
+      <span class="inline-flex items-center justify-center w-9 h-9 rounded-lg bg-brand-600 text-white shrink-0">
+        <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
+        </svg>
+      </span>
+      <div class="min-w-0">
+        <p class="text-base font-semibold text-slate-900 leading-tight">Order<span class="text-brand-600">Mng</span></p>
+        <p class="text-[11px] text-slate-500 leading-tight">Business Suite</p>
+      </div>
+    </div>
+
+    <nav class="flex-1 overflow-y-auto py-3 px-2" aria-label="Primary">
+      <p class="px-3 pt-2 pb-1.5 text-[10px] font-semibold uppercase tracking-wider text-slate-400">Overview</p>
+      <ul class="space-y-0.5">
+        <li>
+          <a href="dashboard.html" data-nav="dashboard"
+             class="nav-link relative flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium
+                    text-slate-700 hover:bg-slate-100 transition-colors">
+            <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
+            </svg>
+            <span>Dashboard</span>
+          </a>
+        </li>
+        <li>
+          <a href="orders.html" data-nav="orders"
+             class="nav-link relative flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium
+                    text-slate-700 hover:bg-slate-100 transition-colors">
+            <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" />
+            </svg>
+            <span>Orders</span>
+            <span id="sidebar-order-count"
+                  class="ml-auto hidden min-w-[22px] h-[22px] px-1.5 items-center justify-center
+                         rounded-full bg-brand-100 text-brand-700 text-[11px] font-semibold">0</span>
+          </a>
+        </li>
+      </ul>
+
+      <p class="px-3 pt-5 pb-1.5 text-[10px] font-semibold uppercase tracking-wider text-slate-400">Manage</p>
+      <ul class="space-y-0.5">
+        <li><a href="customers.html" class="nav-link relative flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-slate-700 hover:bg-slate-100">
+          <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M17 20h5v-2a4 4 0 00-3-3.87M9 20H4v-2a4 4 0 013-3.87m6-5.13a4 4 0 11-8 0 4 4 0 018 0zm6 3a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
+          <span>Customers</span></a></li>
+        <li><a href="products.html" class="nav-link relative flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-slate-700 hover:bg-slate-100">
+          <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" /></svg>
+          <span>Products</span></a></li>
+        <li><a href="payments.html" class="nav-link relative flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-slate-700 hover:bg-slate-100">
+          <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" /></svg>
+          <span>Payments</span></a></li>
+        <li><a href="delivery.html" class="nav-link relative flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-slate-700 hover:bg-slate-100">
+          <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M13 16V6a1 1 0 00-1-1H4a1 1 0 00-1 1v10a1 1 0 001 1h1m8-1a1 1 0 01-1 1H9m4-1V8a1 1 0 011-1h2.586a1 1 0 01.707.293l3.414 3.414a1 1 0 01.293.707V16a1 1 0 01-1 1h-1m-6-1a1 1 0 001 1h1M5 17a2 2 0 104 0 2 2 0 00-4 0zm10 0a2 2 0 104 0 2 2 0 00-4 0z" /></svg>
+          <span>Delivery</span></a></li>
+      </ul>
+
+      <p class="px-3 pt-5 pb-1.5 text-[10px] font-semibold uppercase tracking-wider text-slate-400">System</p>
+      <ul class="space-y-0.5">
+        <li><a href="reports.html" class="nav-link relative flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-slate-700 hover:bg-slate-100">
+          <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" /></svg>
+          <span>Reports</span></a></li>
+        <li><a href="settings.html" class="nav-link relative flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-slate-700 hover:bg-slate-100">
+          <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" /><path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
+          <span>Settings</span></a></li>
+      </ul>
+    </nav>
+
+    <div class="border-t border-slate-200 p-2.5">
+      <div class="flex items-center gap-2.5 p-2 rounded-lg">
+        <span class="relative shrink-0">
+          <span id="sidebar-avatar" class="inline-flex items-center justify-center w-9 h-9 rounded-full bg-brand-100 text-brand-700 text-sm font-semibold">A</span>
+          <span class="absolute bottom-0 right-0 w-2.5 h-2.5 rounded-full bg-green-500 ring-2 ring-white"></span>
+        </span>
+        <div class="min-w-0 flex-1">
+          <p id="sidebar-name" class="text-sm font-medium text-slate-900 truncate">Admin</p>
+          <p id="sidebar-role" class="text-xs text-slate-500 truncate">Loading…</p>
+        </div>
+      </div>
+    </div>
+  </aside>
+
+  <!-- Main wrapper -->
+  <div class="lg:pl-64 min-h-screen flex flex-col">
+
+    <!-- Navbar -->
+    <header id="app-navbar" class="sticky top-0 z-30 bg-white border-b border-slate-200">
+      <div class="flex items-center justify-between h-14 sm:h-16 px-3 sm:px-4 lg:px-6 gap-2">
+        <div class="flex items-center gap-2 sm:gap-3 min-w-0 flex-1">
+          <button type="button" id="sidebar-toggle"
+                  class="lg:hidden inline-flex items-center justify-center w-10 h-10 rounded-lg shrink-0 text-slate-600 hover:bg-slate-100"
+                  aria-label="Open menu" aria-controls="app-sidebar" aria-expanded="false">
+            <svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M4 6h16M4 12h16M4 18h16" />
+            </svg>
+          </button>
+
+          <nav class="hidden lg:flex items-center gap-1.5 text-sm" aria-label="Breadcrumb">
+            <a href="dashboard.html" class="text-slate-500 hover:text-slate-700">Home</a>
+            <svg xmlns="http://www.w3.org/2000/svg" class="w-3.5 h-3.5 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7" /></svg>
+            <span class="font-medium text-slate-900">Orders</span>
+          </nav>
+
+          <h1 class="lg:hidden text-base font-semibold text-slate-900 truncate">Orders</h1>
+        </div>
+
+        <div class="flex items-center gap-1 sm:gap-1.5 shrink-0">
+          <button type="button" id="notif-btn"
+                  class="relative inline-flex items-center justify-center w-10 h-10 rounded-lg text-slate-600 hover:bg-slate-100"
+                  aria-label="Notifications">
+            <svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" /></svg>
+          </button>
+
+          <div class="relative">
+            <button type="button" id="profile-btn"
+                    class="inline-flex items-center gap-2 pl-1 pr-1.5 sm:pr-2.5 py-1 rounded-lg hover:bg-slate-100"
+                    aria-haspopup="true" aria-expanded="false" aria-controls="profile-menu">
+              <span class="relative">
+                <span id="profile-avatar" class="inline-flex items-center justify-center w-8 h-8 rounded-full bg-brand-100 text-brand-700 font-semibold text-sm">A</span>
+                <span class="absolute bottom-0 right-0 w-2 h-2 rounded-full bg-green-500 ring-2 ring-white"></span>
+              </span>
+              <span class="hidden sm:flex flex-col items-start leading-tight max-w-[120px]">
+                <span id="profile-name" class="text-sm font-medium text-slate-900 truncate">Admin</span>
+                <span id="profile-role" class="text-[11px] text-slate-500 truncate">Loading…</span>
+              </span>
+            </button>
+            <div id="profile-menu" class="hidden absolute right-0 mt-2 w-60 origin-top-right bg-white rounded-xl border border-slate-200 shadow-lg overflow-hidden" role="menu">
+              <div class="px-4 py-3 border-b border-slate-100 bg-slate-50/50">
+                <p id="menu-name" class="text-sm font-semibold text-slate-900 truncate">Admin</p>
+                <p id="menu-email" class="text-xs text-slate-500 truncate mt-0.5">—</p>
+              </div>
+              <div class="border-t border-slate-100">
+                <button type="button" id="logout-btn" role="menuitem"
+                        class="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-red-600 hover:bg-red-50">
+                  Logout
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </header>
+
+    <!-- Main -->
+    <main class="flex-1 px-3 sm:px-4 lg:px-6 py-4 sm:py-6">
+
+      <!-- Header row -->
+      <div class="mb-4 sm:mb-5 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+        <div>
+          <h2 class="text-xl sm:text-2xl font-bold text-slate-900">Orders</h2>
+          <p class="text-sm text-slate-500 mt-0.5">
+            <span id="orders-count-label">Loading orders…</span>
+          </p>
+        </div>
+        <div class="flex items-center gap-2">
+          <button type="button" id="refresh-btn"
+                  class="inline-flex items-center justify-center gap-2 px-3 py-2 rounded-lg border border-slate-300
+                         bg-white text-sm font-medium text-slate-700 hover:bg-slate-50
+                         disabled:opacity-60 disabled:cursor-not-allowed">
+            <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+            </svg>
+            <span class="hidden sm:inline">Refresh</span>
+          </button>
+          <a href="order-create.html"
+             class="inline-flex items-center gap-2 px-3 py-2 rounded-lg bg-brand-600 hover:bg-brand-700
+                    text-sm font-medium text-white">
+            <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4" />
+            </svg>
+            New Order
+          </a>
+        </div>
+      </div>
+
+      <!-- Filter bar -->
+      <div class="bg-white rounded-xl border border-slate-200 p-3 sm:p-4 mb-4">
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-3">
+          <div class="lg:col-span-2">
+            <label for="search-input" class="sr-only">Search orders</label>
+            <div class="relative">
+              <span class="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none">
+                <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-4.35-4.35M17 10.5a6.5 6.5 0 11-13 0 6.5 6.5 0 0113 0z" /></svg>
+              </span>
+              <input type="search" id="search-input" placeholder="Order ID, customer name, phone…"
+                     class="w-full pl-9 pr-3 py-2.5 sm:py-2 rounded-lg border border-slate-300 text-sm
+                            focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-brand-500" />
+            </div>
+          </div>
+
+          <div>
+            <label for="status-filter" class="sr-only">Order status</label>
+            <select id="status-filter"
+                    class="w-full px-3 py-2.5 sm:py-2 rounded-lg border border-slate-300 text-sm bg-white
+                           focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-brand-500">
+              <option value="">All statuses</option>
+              <option>Pending</option>
+              <option>Confirmed</option>
+              <option>Processing</option>
+              <option>Ready to Ship</option>
+              <option>Assigned</option>
+              <option>Out for Delivery</option>
+              <option>Delivered</option>
+              <option>Cancelled</option>
+              <option>Returned</option>
+              <option>Failed Delivery</option>
+            </select>
+          </div>
+
+          <div>
+            <label for="payment-filter" class="sr-only">Payment status</label>
+            <select id="payment-filter"
+                    class="w-full px-3 py-2.5 sm:py-2 rounded-lg border border-slate-300 text-sm bg-white
+                           focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-brand-500">
+              <option value="">All payments</option>
+              <option>Unpaid</option>
+              <option>Partial</option>
+              <option>Paid</option>
+            </select>
+          </div>
+        </div>
+      </div>
+
+      <!-- Orders container -->
+      <div class="bg-white rounded-xl border border-slate-200 overflow-hidden">
+
+        <!-- Desktop table -->
+        <div class="orders-table-wrap">
+          <div class="overflow-x-auto">
+            <table class="orders-table" aria-label="Orders list">
+              <thead>
+                <tr>
+                  <th>Order ID</th>
+                  <th>Shop</th>
+                  <th>Customer</th>
+                  <th>Total</th>
+                  <th>Payment</th>
+                  <th>Status</th>
+                  <th>Date</th>
+                  <th class="text-right">Actions</th>
+                </tr>
+              </thead>
+              <tbody id="orders-tbody">
+                <!-- rows injected by JS -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Mobile cards -->
+        <div class="orders-cards divide-y divide-slate-100" id="orders-cards">
+          <!-- cards injected by JS -->
+        </div>
+
+        <!-- Empty / status area -->
+        <div id="orders-empty" class="hidden p-8 sm:p-12 text-center">
+          <div class="inline-flex items-center justify-center w-12 h-12 rounded-full bg-slate-100 text-slate-400 mb-3">
+            <svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+            </svg>
+          </div>
+          <p class="text-sm font-medium text-slate-700" id="empty-title">No orders yet</p>
+          <p class="text-xs text-slate-500 mt-0.5" id="empty-desc">Create your first order to get started.</p>
+          <a href="order-create.html" id="empty-new-btn"
+             class="inline-flex items-center gap-2 mt-4 px-3 py-2 rounded-lg bg-brand-600 hover:bg-brand-700 text-sm font-medium text-white">
+            <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4" />
+            </svg>
+            Create order
+          </a>
+        </div>
+
+        <!-- Load more -->
+        <div id="load-more-wrap" class="hidden px-4 py-3 border-t border-slate-100 text-center">
+          <button type="button" id="load-more-btn"
+                  class="inline-flex items-center gap-2 px-4 py-2 rounded-lg border border-slate-300
+                         bg-white text-sm font-medium text-slate-700 hover:bg-slate-50
+                         disabled:opacity-60 disabled:cursor-not-allowed">
+            <span class="btn-label">Load more</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Stats footer -->
+      <div class="mt-4 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-slate-500">
+        <span>Showing <span id="shown-count" class="font-medium text-slate-700">0</span> orders</span>
+        <span class="w-1 h-1 rounded-full bg-slate-300"></span>
+        <span>Total loaded: <span id="filtered-count" class="font-medium text-slate-700">0</span></span>
+      </div>
+    </main>
+
+    <footer class="border-t border-slate-200 bg-white">
+      <div class="px-4 lg:px-6 py-4 flex flex-col sm:flex-row items-center justify-between gap-2 text-xs text-slate-500">
+        <p>© <span id="footer-year"></span> Order Management System</p>
+        <p>v1.0.0</p>
+      </div>
+    </footer>
+  </div>
+
+  <!-- ══════════════════════════════════════════════════════
+       ORDER DETAILS MODAL
+       ══════════════════════════════════════════════════════ -->
+  <div id="order-modal" class="modal-backdrop" role="dialog" aria-modal="true"
+       aria-labelledby="order-modal-title" aria-hidden="true">
+    <div class="modal-panel" role="document">
+      <div class="modal-grab"></div>
+
+      <div class="flex items-start justify-between gap-3 px-5 sm:px-6 pt-4 sm:pt-5 pb-3 border-b border-slate-100">
+        <div class="min-w-0">
+          <h2 id="order-modal-title" class="text-base sm:text-lg font-semibold text-slate-900 truncate">
+            Order details
+          </h2>
+          <p id="order-modal-subtitle" class="text-xs text-slate-500 mt-0.5">—</p>
+        </div>
+        <button type="button" id="order-modal-close"
+                class="shrink-0 inline-flex items-center justify-center w-9 h-9 rounded-lg
+                       text-slate-400 hover:bg-slate-100 hover:text-slate-600"
+                aria-label="Close">
+          <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+          </svg>
+        </button>
+      </div>
+
+      <div id="order-modal-body" class="px-5 sm:px-6 py-4 overflow-y-auto flex-1">
+        <!-- Injected by JS -->
+      </div>
+
+      <div class="flex items-center justify-end gap-2 px-5 sm:px-6 py-4 border-t border-slate-100">
+        <button type="button" id="order-modal-delete"
+                class="inline-flex items-center justify-center gap-2 px-3 py-2 rounded-lg
+                       border border-red-300 text-red-600 hover:bg-red-50 text-sm font-medium">
+          <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+          </svg>
+          Delete
+        </button>
+        <button type="button" id="order-modal-done"
+                class="inline-flex items-center justify-center px-4 py-2 rounded-lg
+                       bg-slate-100 text-slate-700 hover:bg-slate-200 text-sm font-medium">
+          Close
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════════════════════
+       CONFIRM DELETE MODAL
+       ══════════════════════════════════════════════════════ -->
+  <div id="confirm-modal" class="modal-backdrop" role="dialog" aria-modal="true"
+       aria-labelledby="confirm-modal-title" aria-hidden="true" style="z-index: 110;">
+    <div class="modal-panel" role="document" style="max-width: 400px;">
+      <div class="px-5 sm:px-6 pt-6 pb-4 text-center">
+        <span class="inline-flex items-center justify-center w-12 h-12 rounded-full bg-red-50 text-red-600 mb-3">
+          <svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01M4.93 19h14.14a2 2 0 001.74-2.97L13.74 4.97a2 2 0 00-3.48 0L3.2 16.03A2 2 0 004.93 19z" />
+          </svg>
+        </span>
+        <h3 id="confirm-modal-title" class="text-base font-semibold text-slate-900">Delete this order?</h3>
+        <p class="text-sm text-slate-500 mt-1">This action cannot be undone.</p>
+      </div>
+
+      <div class="flex items-center gap-2 px-5 sm:px-6 pb-5">
+        <button type="button" id="confirm-cancel"
+                class="flex-1 inline-flex items-center justify-center px-4 py-2.5 rounded-lg
+                       text-sm font-medium text-slate-700 bg-slate-100 hover:bg-slate-200">
+          Cancel
+        </button>
+        <button type="button" id="confirm-delete"
+                class="flex-1 inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg
+                       bg-red-600 hover:bg-red-700 text-white text-sm font-medium
+                       disabled:opacity-60 disabled:cursor-not-allowed">
+          <span class="btn-label">Delete</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast -->
+  <div id="toast-container"
+       class="fixed top-4 right-4 left-4 sm:left-auto sm:top-6 sm:right-6 z-[9999]
+              flex flex-col gap-2 pointer-events-none"
+       role="region" aria-label="Notifications" aria-live="polite"></div>
+
+  <script type="module">
+    import { requireAuth, logoutUser } from "../assets/js/firebase/auth.js";
+    import { toast } from "../assets/js/utils/toast.js";
+    import {
+      queryCollectionCached, countDocuments,
+      deleteDocument, cacheClear,
+    } from "../assets/js/firebase/firestore.js";
+    import {
+      formatCurrency, formatDate, timeAgo, debounce,
+      escapeHtml,
+    } from "../assets/js/utils/helpers.js";
+
+    /* ─── AUTH GUARD ──────────────────────────────────── */
+    let currentUser, currentProfile;
+    try {
+      const a = await requireAuth("../../login.html");
+      currentUser = a.user;
+      currentProfile = a.profile;
+    } catch { throw new Error("Unauthorized"); }
+
+    /* ─── POPULATE USER ───────────────────────────────── */
+    const userName  = currentProfile?.name || currentUser.displayName || "User";
+    const userRole  = currentProfile?.role || "staff";
+    const userEmail = currentUser.email || "";
+    const initial   = (userName.charAt(0) || "U").toUpperCase();
+
+    document.getElementById("profile-avatar").textContent = initial;
+    document.getElementById("profile-name").textContent = userName;
+    document.getElementById("profile-role").textContent = capitalize(userRole);
+    document.getElementById("menu-name").textContent = userName;
+    document.getElementById("menu-email").textContent = userEmail;
+    document.getElementById("sidebar-avatar").textContent = initial;
+    document.getElementById("sidebar-name").textContent = userName;
+    document.getElementById("sidebar-role").textContent = capitalize(userRole);
+    document.getElementById("footer-year").textContent = new Date().getFullYear();
+
+    /* ─── SIDEBAR ─────────────────────────────────────── */
+    const sidebar = document.getElementById("app-sidebar");
+    const overlay = document.getElementById("sidebar-overlay");
+    const toggleBtn = document.getElementById("sidebar-toggle");
+    const closeBtn  = document.getElementById("sidebar-close");
+
+    const openSidebar  = () => { sidebar.classList.add("is-open"); overlay.classList.add("is-visible"); document.body.classList.add("no-scroll"); toggleBtn.setAttribute("aria-expanded", "true"); };
+    const closeSidebar = () => { sidebar.classList.remove("is-open"); overlay.classList.remove("is-visible"); document.body.classList.remove("no-scroll"); toggleBtn.setAttribute("aria-expanded", "false"); };
+
+    toggleBtn.addEventListener("click", openSidebar);
+    closeBtn.addEventListener("click", closeSidebar);
+    overlay.addEventListener("click", closeSidebar);
+    sidebar.querySelectorAll("a.nav-link").forEach((a) => a.addEventListener("click", () => { if (innerWidth < 1024) closeSidebar(); }));
+
+    // Active link
+    const currentPage = location.pathname.split("/").pop() || "orders.html";
+    sidebar.querySelector(`a[href="${currentPage}"]`)?.classList.add("active");
+
+    /* ─── PROFILE MENU ────────────────────────────────── */
+    const profileBtn  = document.getElementById("profile-btn");
+    const profileMenu = document.getElementById("profile-menu");
+    const openProfile  = () => { profileMenu.classList.remove("hidden"); profileBtn.setAttribute("aria-expanded", "true"); };
+    const closeProfile = () => { profileMenu.classList.add("hidden"); profileBtn.setAttribute("aria-expanded", "false"); };
+    profileBtn.addEventListener("click", (e) => { e.stopPropagation(); profileMenu.classList.contains("hidden") ? openProfile() : closeProfile(); });
+    document.addEventListener("click", (e) => { if (!profileMenu.contains(e.target) && !profileBtn.contains(e.target)) closeProfile(); });
+
+    // Global ESC
+    document.addEventListener("keydown", (e) => {
+      if (e.key === "Escape") {
+        closeSidebar();
+        closeProfile();
+        if (orderModal.classList.contains("is-open")) closeOrderModal();
+        if (confirmModal.classList.contains("is-open")) closeConfirmModal();
+      }
+    });
+
+    /* ─── LOGOUT ──────────────────────────────────────── */
+    document.getElementById("logout-btn").addEventListener("click", async () => {
+      try { await logoutUser(); toast.success("Logged out"); setTimeout(() => location.replace("../../login.html"), 300); }
+      catch { toast.error("Logout failed"); }
+    });
+
+    /* ════════════════════════════════════════════════════
+       ORDERS DATA LAYER
+       ════════════════════════════════════════════════════ */
+    const PAGE_SIZE = 20;
+    const MAX_CACHE_AGE = 30000;
+
+    const state = {
+      items: [],
+      lastDoc: null,
+      hasMore: false,
+      loading: false,
+      search: "",
+      statusFilter: "",
+      paymentFilter: "",
+    };
+
+    /* ─── DOM REFS ────────────────────────────────────── */
+    const tbody        = document.getElementById("orders-tbody");
+    const cardsWrap    = document.getElementById("orders-cards");
+    const emptyEl      = document.getElementById("orders-empty");
+    const emptyTitle   = document.getElementById("empty-title");
+    const emptyDesc    = document.getElementById("empty-desc");
+    const emptyNewBtn  = document.getElementById("empty-new-btn");
+    const loadMoreWrap = document.getElementById("load-more-wrap");
+    const loadMoreBtn  = document.getElementById("load-more-btn");
+    const searchInput  = document.getElementById("search-input");
+    const statusSelect = document.getElementById("status-filter");
+    const paySelect    = document.getElementById("payment-filter");
+    const shownCount   = document.getElementById("shown-count");
+    const filteredCnt  = document.getElementById("filtered-count");
+    const countLabel   = document.getElementById("orders-count-label");
+    const refreshBtn   = document.getElementById("refresh-btn");
+
+    /* ─── LOAD ORDERS ─────────────────────────────────── */
+    async function loadOrders({ reset = false } = {}) {
+      if (state.loading) return;
+      state.loading = true;
+      refreshBtn.disabled = true;
+
+      if (reset) {
+        state.items = [];
+        state.lastDoc = null;
+      }
+
+      const filters = [];
+      if (state.statusFilter) filters.push(["status", "==", state.statusFilter]);
+      if (state.paymentFilter) filters.push(["payment.status", "==", state.paymentFilter]);
+
+      let result;
+      try {
+        result = await queryCollectionCached("orders", {
+          filters,
+          order: [["createdAt", "desc"]],
+          limitCount: PAGE_SIZE,
+          cursor: reset ? null : state.lastDoc,
+          skipCache: false,
+          cacheTtlMs: MAX_CACHE_AGE,
+        });
+      } catch (err) {
+        console.error("Load orders failed:", err);
+        toast.error("Could not load orders.");
+        state.loading = false;
+        refreshBtn.disabled = false;
+        return;
+      }
+
+      const existingIds = new Set(state.items.map((o) => o.id));
+      const fresh = result.items.filter((o) => !existingIds.has(o.id));
+
+      state.items = state.items.concat(fresh);
+      state.lastDoc = result.lastDoc;
+      state.hasMore = result.hasMore;
+      state.loading = false;
+      refreshBtn.disabled = false;
+
+      render();
+    }
+
+    /* ─── RENDER ──────────────────────────────────────── */
+    function render() {
+      const filtered = applyClientFilters(state.items);
+
+      shownCount.textContent = filtered.length;
+      filteredCnt.textContent = state.items.length;
+
+      if (state.search || state.statusFilter || state.paymentFilter) {
+        countLabel.textContent = `${filtered.length} of ${state.items.length} shown`;
+      } else {
+        countLabel.textContent = state.items.length === 0
+          ? "No orders yet"
+          : `${state.items.length} order${state.items.length > 1 ? "s" : ""} loaded`;
+      }
+
+      if (filtered.length === 0) {
+        tbody.innerHTML = "";
+        cardsWrap.innerHTML = "";
+        emptyEl.classList.remove("hidden");
+        loadMoreWrap.classList.add("hidden");
+
+        if (state.search || state.statusFilter || state.paymentFilter) {
+          emptyTitle.textContent = "No matching orders";
+          emptyDesc.textContent = "Try adjusting filters or search term.";
+          emptyNewBtn.classList.add("hidden");
+        } else {
+          emptyTitle.textContent = "No orders yet";
+          emptyDesc.textContent = "Create your first order to get started.";
+          emptyNewBtn.classList.remove("hidden");
+        }
+        return;
+      }
+
+      emptyEl.classList.add("hidden");
+      tbody.innerHTML = filtered.map(renderRow).join("");
+      cardsWrap.innerHTML = filtered.map(renderCard).join("");
+      loadMoreWrap.classList.toggle("hidden", !state.hasMore);
+    }
+
+    /* ─── CLIENT-SIDE FILTER ──────────────────────────── */
+    function applyClientFilters(items) {
+      if (!state.search) return items;
+      const q = state.search.toLowerCase().trim();
+      return items.filter((o) => {
+        const haystack = [
+          o.orderId, o.shopName,
+          o.customer?.name, o.customer?.phone, o.customer?.address,
+        ].filter(Boolean).join(" ").toLowerCase();
+        return haystack.includes(q);
+      });
+    }
+
+    /* ─── BADGE HELPERS ───────────────────────────────── */
+    function statusBadge(status) {
+      const map = {
+        "Pending": "badge-pending",
+        "Confirmed": "badge-confirmed",
+        "Processing": "badge-processing",
+        "Ready to Ship": "badge-ready",
+        "Assigned": "badge-assigned",
+        "Out for Delivery": "badge-out",
+        "Delivered": "badge-delivered",
+        "Cancelled": "badge-cancelled",
+        "Returned": "badge-returned",
+        "Failed Delivery": "badge-failed",
+      };
+      const cls = map[status] || "badge-returned";
+      return `<span class="badge ${cls}"><span class="badge-dot"></span>${escapeHtml(status || "—")}</span>`;
+    }
+    function paymentBadge(status) {
+      const map = { "Unpaid": "badge-unpaid", "Partial": "badge-partial", "Paid": "badge-paid" };
+      const cls = map[status] || "badge-unpaid";
+      return `<span class="badge ${cls}"><span class="badge-dot"></span>${escapeHtml(status || "Unpaid")}</span>`;
+    }
+
+    /* ─── ROW TEMPLATE ────────────────────────────────── */
+    function renderRow(o) {
+      const id = escapeHtml(o.orderId || o.id.slice(0, 8));
+      const shop = escapeHtml(o.shopName || "—");
+      const name = escapeHtml(o.customer?.name || "—");
+      const phone = escapeHtml(o.customer?.phone || "");
+      const total = formatCurrency(o.grandTotal || 0);
+      const payStatus = o.payment?.status || "Unpaid";
+      const status = o.status || "Pending";
+      const date = o.createdAt ? timeAgo(o.createdAt) : "—";
+
+      return `
+        <tr data-id="${o.id}">
+          <td class="font-medium text-slate-900">${id}</td>
+          <td class="text-slate-700 text-sm">${shop}</td>
+          <td>
+            <div class="min-w-0">
+              <p class="text-sm font-medium text-slate-800 truncate">${name}</p>
+              ${phone ? `<p class="text-xs text-slate-500">${phone}</p>` : ""}
+            </div>
+          </td>
+          <td class="font-semibold text-slate-900">${total}</td>
+          <td>${paymentBadge(payStatus)}</td>
+          <td>${statusBadge(status)}</td>
+          <td class="text-xs text-slate-500">${date}</td>
+          <td class="text-right">
+            <button class="order-view-btn inline-flex items-center gap-1 px-2.5 py-1.5 rounded-md text-xs font-medium
+                          text-slate-700 hover:bg-slate-100 border border-slate-200"
+                    data-id="${o.id}">
+              View
+            </button>
+          </td>
+        </tr>
+      `;
+    }
+
+    /* ─── CARD TEMPLATE (mobile) ──────────────────────── */
+    function renderCard(o) {
+      const id = escapeHtml(o.orderId || o.id.slice(0, 8));
+      const shop = escapeHtml(o.shopName || "");
+      const name = escapeHtml(o.customer?.name || "—");
+      const phone = escapeHtml(o.customer?.phone || "");
+      const total = formatCurrency(o.grandTotal || 0);
+      const payStatus = o.payment?.status || "Unpaid";
+      const status = o.status || "Pending";
+      const date = o.createdAt ? timeAgo(o.createdAt) : "—";
+
+      return `
+        <div class="p-4" data-id="${o.id}">
+          <div class="flex items-start justify-between gap-3 mb-2">
+            <div class="min-w-0">
+              <p class="text-sm font-semibold text-slate-900">${id}</p>
+              ${shop ? `<p class="text-xs text-slate-500 mt-0.5">${shop}</p>` : ""}
+              <p class="text-xs text-slate-500 mt-0.5">${date}</p>
+            </div>
+            ${statusBadge(status)}
+          </div>
+          <div class="flex items-center justify-between gap-3 mb-3">
+            <div class="min-w-0">
+              <p class="text-sm font-medium text-slate-800 truncate">${name}</p>
+              ${phone ? `<p class="text-xs text-slate-500">${phone}</p>` : ""}
+            </div>
+            <p class="text-base font-bold text-slate-900 whitespace-nowrap">${total}</p>
+          </div>
+          <div class="flex items-center justify-between gap-2">
+            ${paymentBadge(payStatus)}
+            <button class="order-view-btn inline-flex items-center gap-1 px-3 py-1.5 rounded-md text-xs font-medium
+                          text-slate-700 hover:bg-slate-100 border border-slate-200"
+                    data-id="${o.id}">
+              View details
+            </button>
+          </div>
+        </div>
+      `;
+    }
+
+    /* ════════════════════════════════════════════════════
+       ORDER DETAILS MODAL
+       ════════════════════════════════════════════════════ */
+    const orderModal     = document.getElementById("order-modal");
+    const orderModalBody = document.getElementById("order-modal-body");
+    const orderModalTitle = document.getElementById("order-modal-title");
+    const orderModalSub = document.getElementById("order-modal-subtitle");
+
+    let currentOrderId = null;
+
+    function openOrderModal(order) {
+      currentOrderId = order.id;
+      orderModalTitle.textContent = order.orderId || order.id.slice(0, 8);
+      orderModalSub.textContent = order.shopName ? `Shop: ${order.shopName}` : "";
+      orderModalBody.innerHTML = renderOrderDetails(order);
+      orderModal.classList.add("is-open");
+      orderModal.setAttribute("aria-hidden", "false");
+      document.body.classList.add("no-scroll");
+    }
+
+    function closeOrderModal() {
+      orderModal.classList.remove("is-open");
+      orderModal.setAttribute("aria-hidden", "true");
+      document.body.classList.remove("no-scroll");
+      currentOrderId = null;
+    }
+
+    function renderOrderDetails(o) {
+      const items = o.items || [];
+      const itemsTotal = items.reduce((s, it) => s + (Number(it.total) || 0), 0);
+
+      return `
+        <!-- Status row -->
+        <div class="flex items-center flex-wrap gap-2 mb-4">
+          ${statusBadge(o.status || "Pending")}
+          ${paymentBadge(o.payment?.status || "Unpaid")}
+        </div>
+
+        <!-- Customer -->
+        <div class="bg-slate-50 rounded-lg p-3 mb-3">
+          <p class="text-[11px] font-semibold uppercase tracking-wide text-slate-500 mb-1.5">Customer</p>
+          <p class="text-sm font-medium text-slate-900">${escapeHtml(o.customer?.name || "—")}</p>
+          <p class="text-xs text-slate-600">${escapeHtml(o.customer?.phone || "")}${o.customer?.altPhone ? " · " + escapeHtml(o.customer.altPhone) : ""}</p>
+          <p class="text-xs text-slate-600 mt-1">${escapeHtml(o.customer?.address || "")}</p>
+          ${o.customer?.area || o.customer?.district ? `<p class="text-xs text-slate-500 mt-0.5">${escapeHtml([o.customer?.area, o.customer?.district].filter(Boolean).join(", "))}</p>` : ""}
+        </div>
+
+        <!-- Items -->
+        <p class="text-[11px] font-semibold uppercase tracking-wide text-slate-500 mb-2">Products (${items.length})</p>
+        <div class="space-y-2 mb-4">
+          ${items.length === 0
+            ? `<p class="text-xs text-slate-400">No items</p>`
+            : items.map((it) => `
+              <div class="flex items-start justify-between gap-3 text-sm py-2 border-b border-slate-100 last:border-0">
+                <div class="min-w-0">
+                  <p class="text-slate-800 truncate">${escapeHtml(it.name || "—")}</p>
+                  <p class="text-xs text-slate-500">${it.quantity || 0} × ${formatCurrency(it.price || 0)}</p>
+                </div>
+                <span class="font-medium text-slate-900 whitespace-nowrap">${formatCurrency(it.total || 0)}</span>
+              </div>
+            `).join("")
+          }
+        </div>
+
+        <!-- Totals -->
+        <div class="bg-slate-50 rounded-lg p-3 space-y-1.5 text-sm">
+          <div class="flex justify-between">
+            <span class="text-slate-600">Subtotal</span>
+            <span class="text-slate-900 font-medium">${formatCurrency(o.subtotal || itemsTotal)}</span>
+          </div>
+          <div class="flex justify-between">
+            <span class="text-slate-600">Discount</span>
+            <span class="text-slate-900">-${formatCurrency(o.discount || 0)}</span>
+          </div>
+          <div class="flex justify-between">
+            <span class="text-slate-600">Delivery</span>
+            <span class="text-slate-900">+${formatCurrency(o.deliveryCharge || 0)}</span>
+          </div>
+          <div class="flex justify-between pt-2 border-t border-slate-200">
+            <span class="text-slate-700 font-semibold">Grand Total</span>
+            <span class="text-brand-700 font-bold">${formatCurrency(o.grandTotal || 0)}</span>
+          </div>
+          <div class="flex justify-between">
+            <span class="text-slate-600">Paid (${escapeHtml(o.payment?.method || "Cash")})</span>
+            <span class="text-green-600 font-medium">${formatCurrency(o.payment?.paid || 0)}</span>
+          </div>
+          <div class="flex justify-between">
+            <span class="text-slate-600">Due</span>
+            <span class="text-red-600 font-semibold">${formatCurrency(o.payment?.due || 0)}</span>
+          </div>
+        </div>
+
+        <!-- Notes -->
+        ${o.customerNote || o.internalNote ? `
+          <div class="mt-3 space-y-2">
+            ${o.customerNote ? `
+              <div class="bg-slate-50 rounded-lg p-3">
+                <p class="text-[11px] font-semibold uppercase tracking-wide text-slate-500 mb-1">Customer note</p>
+                <p class="text-sm text-slate-700">${escapeHtml(o.customerNote)}</p>
+              </div>
+            ` : ""}
+            ${o.internalNote ? `
+              <div class="bg-amber-50 rounded-lg p-3">
+                <p class="text-[11px] font-semibold uppercase tracking-wide text-amber-700 mb-1">Internal note</p>
+                <p class="text-sm text-amber-900">${escapeHtml(o.internalNote)}</p>
+              </div>
+            ` : ""}
+          </div>
+        ` : ""}
+
+        <!-- Meta -->
+        <p class="text-[11px] text-slate-400 mt-4">
+          Created ${o.createdAt ? formatDate(o.createdAt, true) : "—"}
+        </p>
+      `;
+    }
+
+    // Close order modal buttons
+    document.getElementById("order-modal-close").addEventListener("click", closeOrderModal);
+    document.getElementById("order-modal-done").addEventListener("click", closeOrderModal);
+    orderModal.addEventListener("click", (e) => { if (e.target === orderModal) closeOrderModal(); });
+
+    /* ════════════════════════════════════════════════════
+       CONFIRM DELETE MODAL
+       ════════════════════════════════════════════════════ */
+    const confirmModal    = document.getElementById("confirm-modal");
+    const confirmDeleteBtn = document.getElementById("confirm-delete");
+    const confirmCancelBtn = document.getElementById("confirm-cancel");
+
+    function openConfirmModal() {
+      confirmModal.classList.add("is-open");
+      confirmModal.setAttribute("aria-hidden", "false");
+    }
+    function closeConfirmModal() {
+      confirmModal.classList.remove("is-open");
+      confirmModal.setAttribute("aria-hidden", "true");
+    }
+
+    document.getElementById("order-modal-delete").addEventListener("click", () => {
+      if (!currentOrderId) return;
+      openConfirmModal();
+    });
+
+    confirmCancelBtn.addEventListener("click", closeConfirmModal);
+    confirmModal.addEventListener("click", (e) => { if (e.target === confirmModal) closeConfirmModal(); });
+
+    confirmDeleteBtn.addEventListener("click", async () => {
+      if (!currentOrderId) return;
+
+      confirmDeleteBtn.disabled = true;
+      const labelEl = confirmDeleteBtn.querySelector(".btn-label");
+      const original = labelEl.textContent;
+      labelEl.textContent = "Deleting…";
+
+      try {
+        await deleteDocument("orders", currentOrderId);
+        cacheClear("q:orders");
+
+        // Remove from local state
+        state.items = state.items.filter((o) => o.id !== currentOrderId);
+        render();
+        updateSidebarCount(true); // force refresh
+
+        closeConfirmModal();
+        closeOrderModal();
+        toast.success("Order deleted.");
+      } catch (err) {
+        console.error("Delete failed:", err);
+        toast.error("Failed to delete order.");
+      } finally {
+        confirmDeleteBtn.disabled = false;
+        labelEl.textContent = original;
+      }
+    });
+
+    /* ─── DELEGATED CLICK (view buttons) ──────────────── */
+    document.addEventListener("click", (e) => {
+      const btn = e.target.closest(".order-view-btn");
+      if (!btn) return;
+      const id = btn.dataset.id;
+      const order = state.items.find((o) => o.id === id);
+      if (order) openOrderModal(order);
+    });
+
+    /* ─── FILTER EVENT HANDLERS ───────────────────────── */
+    searchInput.addEventListener("input", debounce(() => {
+      state.search = searchInput.value.trim();
+      render();
+    }, 200));
+
+    statusSelect.addEventListener("change", () => {
+      state.statusFilter = statusSelect.value;
+      loadOrders({ reset: true });
+    });
+
+    paySelect.addEventListener("change", () => {
+      state.paymentFilter = paySelect.value;
+      loadOrders({ reset: true });
+    });
+
+    loadMoreBtn.addEventListener("click", () => {
+      const label = loadMoreBtn.querySelector(".btn-label");
+      loadMoreBtn.disabled = true;
+      label.textContent = "Loading…";
+      loadOrders().finally(() => {
+        loadMoreBtn.disabled = false;
+        label.textContent = "Load more";
+      });
+    });
+
+    refreshBtn.addEventListener("click", () => {
+      cacheClear("q:orders");
+      loadOrders({ reset: true });
+      toast.info("Refreshed");
+    });
+
+    /* ─── SIDEBAR COUNT ───────────────────────────────── */
+    let sidebarCountLoaded = false;
+    async function updateSidebarCount(force = false) {
+      const badge = document.getElementById("sidebar-order-count");
+      if (!badge) return;
+      if (sidebarCountLoaded && !force) return;
+      try {
+        const total = await countDocuments("orders", []);
+        sidebarCountLoaded = true;
+        if (total > 0) {
+          badge.textContent = total > 99 ? "99+" : total;
+          badge.classList.remove("hidden");
+          badge.classList.add("inline-flex");
+        } else {
+          badge.classList.add("hidden");
+          badge.classList.remove("inline-flex");
+        }
+      } catch { /* silent */ }
+    }
+
+    /* ─── BOOTSTRAP ───────────────────────────────────── */
+    (async function init() {
+      updateSidebarCount();
+      await loadOrders({ reset: true });
+
+      const params = new URLSearchParams(location.search);
+      const q = params.get("q");
+      if (q) {
+        searchInput.value = q;
+        state.search = q;
+        render();
+      }
+    })();
+
+    /* ─── HELPERS ─────────────────────────────────────── */
+    function capitalize(s) { return s ? s.charAt(0).toUpperCase() + s.slice(1) : ""; }
+  </script>
+</body>
+</html>

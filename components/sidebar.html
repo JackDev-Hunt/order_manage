@@ -1,0 +1,155 @@
+<!-- components/sidebar.html -->
+<!-- Side navigation — desktop fixed, mobile drawer -->
+
+<!-- Mobile overlay -->
+<div
+  id="sidebar-overlay"
+  class="fixed inset-0 z-40 bg-slate-900/60 backdrop-blur-sm
+         opacity-0 pointer-events-none transition-opacity duration-[250ms] lg:hidden"
+  aria-hidden="true"
+></div>
+
+<!-- Sidebar -->
+<aside
+  id="app-sidebar"
+  class="sidebar-drawer fixed top-0 left-0 bottom-0 z-50 w-64 bg-white border-r border-slate-200 flex flex-col"
+  aria-label="Main navigation"
+>
+  <!-- Mobile drawer header -->
+  <div class="flex items-center justify-between h-14 px-4 border-b border-slate-200 lg:hidden">
+    <a href="dashboard.html" class="flex items-center gap-2 min-w-0">
+      <span class="inline-flex items-center justify-center w-9 h-9 rounded-lg bg-brand-600 text-white shrink-0">
+        <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
+        </svg>
+      </span>
+      <span class="text-base font-semibold text-slate-900">Order<span class="text-brand-600">Mng</span></span>
+    </a>
+    <button type="button" id="sidebar-close"
+            class="inline-flex items-center justify-center w-10 h-10 rounded-lg text-slate-600 hover:bg-slate-100"
+            aria-label="Close menu">
+      <svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+        <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+      </svg>
+    </button>
+  </div>
+
+  <!-- Desktop brand header -->
+  <div class="hidden lg:flex items-center gap-2.5 h-16 px-4 border-b border-slate-200">
+    <span class="inline-flex items-center justify-center w-9 h-9 rounded-lg bg-brand-600 text-white shrink-0">
+      <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+        <path stroke-linecap="round" stroke-linejoin="round" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
+      </svg>
+    </span>
+    <div class="min-w-0">
+      <p class="text-base font-semibold text-slate-900 leading-tight">Order<span class="text-brand-600">Mng</span></p>
+      <p class="text-[11px] text-slate-500 leading-tight">Business Suite</p>
+    </div>
+  </div>
+
+  <!-- Navigation -->
+  <nav class="flex-1 overflow-y-auto py-3 px-2" aria-label="Primary">
+
+    <!-- Overview -->
+    <p class="px-3 pt-2 pb-1.5 text-[10px] font-semibold uppercase tracking-wider text-slate-400">Overview</p>
+    <ul class="space-y-0.5">
+      <li>
+        <a href="dashboard.html" data-nav="dashboard"
+           class="nav-link relative flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-slate-700 hover:bg-slate-100 transition-colors">
+          <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
+          </svg>
+          <span>Dashboard</span>
+        </a>
+      </li>
+      <li>
+        <a href="orders.html" data-nav="orders"
+           class="nav-link relative flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-slate-700 hover:bg-slate-100 transition-colors">
+          <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" />
+          </svg>
+          <span>Orders</span>
+        </a>
+      </li>
+    </ul>
+
+    <!-- Manage -->
+    <p class="px-3 pt-5 pb-1.5 text-[10px] font-semibold uppercase tracking-wider text-slate-400">Manage</p>
+    <ul class="space-y-0.5">
+      <li>
+        <a href="shops.html" data-nav="shops"
+           class="nav-link relative flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-slate-700 hover:bg-slate-100 transition-colors">
+          <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M3 9l1.5-5h15L21 9m-1 0v11a1 1 0 01-1 1h-4v-7H9v7H5a1 1 0 01-1-1V9m16 0H3" />
+          </svg>
+          <span>Shops</span>
+        </a>
+      </li>
+      <li>
+        <a href="products.html" data-nav="products"
+           class="nav-link relative flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-slate-700 hover:bg-slate-100 transition-colors">
+          <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
+          </svg>
+          <span>Products</span>
+        </a>
+      </li>
+      <li>
+        <a href="payments.html" data-nav="payments"
+           class="nav-link relative flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-slate-700 hover:bg-slate-100 transition-colors">
+          <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
+          </svg>
+          <span>Payments</span>
+        </a>
+      </li>
+      <li>
+        <a href="delivery.html" data-nav="delivery"
+           class="nav-link relative flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-slate-700 hover:bg-slate-100 transition-colors">
+          <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M13 16V6a1 1 0 00-1-1H4a1 1 0 00-1 1v10a1 1 0 001 1h1m8-1a1 1 0 01-1 1H9m4-1V8a1 1 0 011-1h2.586a1 1 0 01.707.293l3.414 3.414a1 1 0 01.293.707V16a1 1 0 01-1 1h-1m-6-1a1 1 0 001 1h1M5 17a2 2 0 104 0 2 2 0 00-4 0zm10 0a2 2 0 104 0 2 2 0 00-4 0z" />
+          </svg>
+          <span>Delivery</span>
+        </a>
+      </li>
+    </ul>
+
+    <!-- System -->
+    <p class="px-3 pt-5 pb-1.5 text-[10px] font-semibold uppercase tracking-wider text-slate-400">System</p>
+    <ul class="space-y-0.5">
+      <li>
+        <a href="reports.html" data-nav="reports"
+           class="nav-link relative flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-slate-700 hover:bg-slate-100 transition-colors">
+          <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+          </svg>
+          <span>Reports</span>
+        </a>
+      </li>
+      <li>
+        <a href="settings.html" data-nav="settings"
+           class="nav-link relative flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-slate-700 hover:bg-slate-100 transition-colors">
+          <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+            <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+          </svg>
+          <span>Settings</span>
+        </a>
+      </li>
+    </ul>
+  </nav>
+
+  <!-- Sidebar footer (user) -->
+  <div class="border-t border-slate-200 p-2.5">
+    <div class="flex items-center gap-2.5 p-2 rounded-lg">
+      <span class="relative shrink-0">
+        <span id="sidebar-avatar" class="inline-flex items-center justify-center w-9 h-9 rounded-full bg-brand-100 text-brand-700 text-sm font-semibold">A</span>
+        <span class="absolute bottom-0 right-0 w-2.5 h-2.5 rounded-full bg-green-500 ring-2 ring-white"></span>
+      </span>
+      <div class="min-w-0 flex-1">
+        <p id="sidebar-name" class="text-sm font-medium text-slate-900 truncate">Admin</p>
+        <p id="sidebar-role" class="text-xs text-slate-500 truncate">Loading…</p>
+      </div>
+    </div>
+  </div>
+</aside>

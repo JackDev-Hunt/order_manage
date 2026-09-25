@@ -1,0 +1,1204 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <meta name="theme-color" content="#2563eb" />
+  <title>Create Order — Order Management</title>
+
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            brand: { 50:"#eff6ff",100:"#dbeafe",200:"#bfdbfe",500:"#3b82f6",600:"#2563eb",700:"#1d4ed8",900:"#1e3a8a" }
+          },
+          fontFamily: { sans: ["Inter","system-ui","sans-serif"] },
+          transitionDuration: { "250": "250ms" }
+        }
+      }
+    };
+  </script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../assets/css/style.css" />
+
+  <style>
+    .modal-backdrop {
+      position: fixed; inset: 0; z-index: 100;
+      background: rgba(15, 23, 42, 0.55);
+      backdrop-filter: blur(2px); -webkit-backdrop-filter: blur(2px);
+      display: none; align-items: flex-end; justify-content: center;
+      animation: modalBackdropFade 0.2s ease-out;
+    }
+    .modal-backdrop.is-open { display: flex; }
+    @media (min-width: 640px) { .modal-backdrop { align-items: center; padding: 1.5rem; } }
+    .modal-panel {
+      width: 100%; max-width: 100%; background: #fff;
+      border-radius: 20px 20px 0 0; max-height: 92vh;
+      overflow: hidden; display: flex; flex-direction: column;
+      box-shadow: 0 -10px 30px rgba(15, 23, 42, 0.15);
+      animation: modalSlideUp 0.28s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    @media (min-width: 640px) {
+      .modal-panel {
+        max-width: 480px; border-radius: 16px;
+        box-shadow: 0 20px 60px rgba(15, 23, 42, 0.25);
+        animation: modalFadeScale 0.22s cubic-bezier(0.16, 1, 0.3, 1);
+      }
+    }
+    @keyframes modalSlideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
+    @keyframes modalFadeScale { from { opacity: 0; transform: scale(0.96); } to { opacity: 1; transform: scale(1); } }
+    @keyframes modalBackdropFade { from { opacity: 0; } to { opacity: 1; } }
+    .modal-grab { width: 40px; height: 4px; border-radius: 9999px; background: #cbd5e1; margin: 8px auto 0; }
+    @media (min-width: 640px) { .modal-grab { display: none; } }
+
+    /* ─── Quantity control ─── */
+    .qty-control {
+      display: inline-flex;
+      align-items: stretch;
+      border: 1px solid #cbd5e1;
+      border-radius: 8px;
+      overflow: hidden;
+      background: #fff;
+    }
+    .qty-control input {
+      border: 0;
+      text-align: center;
+      width: 52px;
+      min-height: 38px;
+      padding: 0;
+      font-size: 14px;
+      font-weight: 600;
+      outline: 0;
+      background: transparent;
+      -moz-appearance: textfield;
+      color: #0f172a;
+    }
+    .qty-control input::-webkit-outer-spin-button,
+    .qty-control input::-webkit-inner-spin-button {
+      -webkit-appearance: none;
+      margin: 0;
+    }
+    .qty-btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 34px;
+      min-height: 38px;
+      border: 0;
+      background: #f1f5f9;
+      color: #334155;
+      cursor: pointer;
+      transition: background-color 0.15s ease;
+      font-weight: 700;
+      font-size: 16px;
+      line-height: 1;
+    }
+    .qty-btn:hover { background: #e2e8f0; }
+    .qty-btn:active { background: #cbd5e1; }
+    .qty-btn:disabled { opacity: 0.35; cursor: not-allowed; }
+    .qty-btn svg { width: 14px; height: 14px; }
+    @media (min-width: 640px) {
+      .qty-control input { min-height: 34px; }
+      .qty-btn { min-height: 34px; }
+    }
+  </style>
+</head>
+
+<body class="bg-slate-50 min-h-screen">
+
+  <!-- Sidebar overlay -->
+  <div id="sidebar-overlay"
+       class="fixed inset-0 z-40 bg-slate-900/60 backdrop-blur-sm
+              opacity-0 pointer-events-none transition-opacity duration-[250ms] lg:hidden"
+       aria-hidden="true"></div>
+
+  <!-- Sidebar -->
+  <aside id="app-sidebar"
+         class="sidebar-drawer fixed top-0 left-0 bottom-0 z-50 w-64 bg-white border-r border-slate-200 flex flex-col"
+         aria-label="Main navigation">
+
+    <div class="flex items-center justify-between h-14 px-4 border-b border-slate-200 lg:hidden">
+      <a href="dashboard.html" class="flex items-center gap-2">
+        <span class="inline-flex items-center justify-center w-9 h-9 rounded-lg bg-brand-600 text-white">
+          <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" /></svg>
+        </span>
+        <span class="text-base font-semibold text-slate-900">Order<span class="text-brand-600">Mng</span></span>
+      </a>
+      <button type="button" id="sidebar-close"
+              class="inline-flex items-center justify-center w-10 h-10 rounded-lg text-slate-600 hover:bg-slate-100"
+              aria-label="Close menu">
+        <svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" /></svg>
+      </button>
+    </div>
+
+    <div class="hidden lg:flex items-center gap-2.5 h-16 px-4 border-b border-slate-200">
+      <span class="inline-flex items-center justify-center w-9 h-9 rounded-lg bg-brand-600 text-white">
+        <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" /></svg>
+      </span>
+      <div>
+        <p class="text-base font-semibold text-slate-900 leading-tight">Order<span class="text-brand-600">Mng</span></p>
+        <p class="text-[11px] text-slate-500 leading-tight">Business Suite</p>
+      </div>
+    </div>
+
+    <nav class="flex-1 overflow-y-auto py-3 px-2" aria-label="Primary">
+      <p class="px-3 pt-2 pb-1.5 text-[10px] font-semibold uppercase tracking-wider text-slate-400">Overview</p>
+      <ul class="space-y-0.5">
+        <li><a href="dashboard.html" class="nav-link relative flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-slate-700 hover:bg-slate-100">
+          <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" /></svg>
+          <span>Dashboard</span></a></li>
+        <li><a href="orders.html" class="nav-link relative flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-slate-700 hover:bg-slate-100">
+          <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" /></svg>
+          <span>Orders</span></a></li>
+      </ul>
+
+      <p class="px-3 pt-5 pb-1.5 text-[10px] font-semibold uppercase tracking-wider text-slate-400">Manage</p>
+      <ul class="space-y-0.5">
+        <li><a href="shops.html" class="nav-link relative flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-slate-700 hover:bg-slate-100">
+          <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M3 9l1.5-5h15L21 9m-1 0v11a1 1 0 01-1 1h-4v-7H9v7H5a1 1 0 01-1-1V9m16 0H3" /></svg>
+          <span>Customers</span></a></li>
+        <li><a href="products.html" class="nav-link relative flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-slate-700 hover:bg-slate-100">
+          <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" /></svg>
+          <span>Products</span></a></li>
+        <li><a href="payments.html" class="nav-link relative flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-slate-700 hover:bg-slate-100"><span>Payments</span></a></li>
+        <li><a href="delivery.html" class="nav-link relative flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-slate-700 hover:bg-slate-100"><span>Delivery</span></a></li>
+      </ul>
+
+      <p class="px-3 pt-5 pb-1.5 text-[10px] font-semibold uppercase tracking-wider text-slate-400">System</p>
+      <ul class="space-y-0.5">
+        <li><a href="reports.html" class="nav-link relative flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-slate-700 hover:bg-slate-100"><span>Reports</span></a></li>
+        <li><a href="settings.html" class="nav-link relative flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-slate-700 hover:bg-slate-100"><span>Settings</span></a></li>
+      </ul>
+    </nav>
+
+    <div class="border-t border-slate-200 p-2.5">
+      <div class="flex items-center gap-2.5 p-2 rounded-lg">
+        <span class="relative shrink-0">
+          <span id="sidebar-avatar" class="inline-flex items-center justify-center w-9 h-9 rounded-full bg-brand-100 text-brand-700 text-sm font-semibold">A</span>
+          <span class="absolute bottom-0 right-0 w-2.5 h-2.5 rounded-full bg-green-500 ring-2 ring-white"></span>
+        </span>
+        <div class="min-w-0 flex-1">
+          <p id="sidebar-name" class="text-sm font-medium text-slate-900 truncate">Admin</p>
+          <p id="sidebar-role" class="text-xs text-slate-500 truncate">Loading…</p>
+        </div>
+      </div>
+    </div>
+  </aside>
+
+  <!-- Main wrapper -->
+  <div class="lg:pl-64 min-h-screen flex flex-col">
+
+    <!-- Navbar -->
+    <header id="app-navbar" class="sticky top-0 z-30 bg-white border-b border-slate-200">
+      <div class="flex items-center justify-between h-14 sm:h-16 px-3 sm:px-4 lg:px-6 gap-2">
+        <div class="flex items-center gap-2 sm:gap-3 min-w-0 flex-1">
+          <button type="button" id="sidebar-toggle"
+                  class="lg:hidden inline-flex items-center justify-center w-10 h-10 rounded-lg shrink-0 text-slate-600 hover:bg-slate-100"
+                  aria-label="Open menu">
+            <svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M4 6h16M4 12h16M4 18h16" /></svg>
+          </button>
+          <nav class="hidden lg:flex items-center gap-1.5 text-sm">
+            <a href="dashboard.html" class="text-slate-500 hover:text-slate-700">Home</a>
+            <svg xmlns="http://www.w3.org/2000/svg" class="w-3.5 h-3.5 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7" /></svg>
+            <a href="orders.html" class="text-slate-500 hover:text-slate-700">Orders</a>
+            <svg xmlns="http://www.w3.org/2000/svg" class="w-3.5 h-3.5 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7" /></svg>
+            <span class="font-medium text-slate-900">Create</span>
+          </nav>
+          <h1 class="lg:hidden text-base font-semibold text-slate-900 truncate">Create Order</h1>
+        </div>
+
+        <div class="flex items-center gap-1.5 shrink-0">
+          <div class="relative">
+            <button type="button" id="profile-btn"
+                    class="inline-flex items-center gap-2 pl-1 pr-1.5 sm:pr-2.5 py-1 rounded-lg hover:bg-slate-100">
+              <span class="relative">
+                <span id="profile-avatar" class="inline-flex items-center justify-center w-8 h-8 rounded-full bg-brand-100 text-brand-700 font-semibold text-sm">A</span>
+                <span class="absolute bottom-0 right-0 w-2 h-2 rounded-full bg-green-500 ring-2 ring-white"></span>
+              </span>
+              <span class="hidden sm:flex flex-col items-start leading-tight max-w-[120px]">
+                <span id="profile-name" class="text-sm font-medium text-slate-900 truncate">Admin</span>
+                <span id="profile-role" class="text-[11px] text-slate-500 truncate">Loading…</span>
+              </span>
+            </button>
+            <div id="profile-menu" class="hidden absolute right-0 mt-2 w-60 origin-top-right bg-white rounded-xl border border-slate-200 shadow-lg overflow-hidden">
+              <div class="px-4 py-3 border-b border-slate-100 bg-slate-50/50">
+                <p id="menu-name" class="text-sm font-semibold text-slate-900 truncate">Admin</p>
+                <p id="menu-email" class="text-xs text-slate-500 truncate">—</p>
+              </div>
+              <div class="border-t border-slate-100">
+                <button type="button" id="logout-btn" class="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-red-600 hover:bg-red-50">Logout</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </header>
+
+    <!-- Main -->
+    <main class="flex-1 px-3 sm:px-4 lg:px-6 py-4 sm:py-6">
+
+      <div class="mb-4 sm:mb-5 flex items-center justify-between gap-3">
+        <div>
+          <h2 class="text-xl sm:text-2xl font-bold text-slate-900">Create Order</h2>
+          <p class="text-sm text-slate-500 mt-0.5">Select customer, add products, and save.</p>
+        </div>
+        <a href="orders.html"
+           class="inline-flex items-center gap-2 px-3 py-2 rounded-lg border border-slate-300 bg-white
+                  text-sm font-medium text-slate-700 hover:bg-slate-50">
+          <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7" /></svg>
+          <span class="hidden sm:inline">Back to Orders</span>
+        </a>
+      </div>
+
+      <form id="order-form" novalidate>
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-5">
+
+          <!-- LEFT -->
+          <div class="lg:col-span-2 space-y-4 sm:space-y-5">
+
+            <!-- CUSTOMER SELECTION -->
+            <section class="bg-white rounded-xl border border-slate-200 p-4 sm:p-5">
+              <h3 class="text-sm font-semibold text-slate-900 mb-3 flex items-center gap-2">
+                <span class="inline-flex items-center justify-center w-5 h-5 rounded-full bg-brand-100 text-brand-700 text-[10px] font-bold">1</span>
+                Select Customer
+              </h3>
+
+              <div>
+                <label for="customer-select" class="block text-sm font-medium text-slate-700 mb-1.5">
+                  Customer <span class="text-red-500">*</span>
+                </label>
+                <div class="flex gap-2">
+                  <select id="customer-select" name="shopId" required
+                          class="flex-1 px-3 py-2.5 sm:py-2 rounded-lg border border-slate-300 text-sm bg-white
+                                 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-brand-500">
+                    <option value="">Loading customers…</option>
+                  </select>
+                  <button type="button" id="add-customer-btn"
+                          class="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg border border-brand-500 text-brand-600 bg-brand-50
+                                 hover:bg-brand-100 text-sm font-medium whitespace-nowrap">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                      <path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4" />
+                    </svg>
+                    <span class="hidden sm:inline">Add Customer</span>
+                  </button>
+                </div>
+                <p class="text-xs text-slate-500 mt-1.5" id="customer-hint">Select a customer or add a new one.</p>
+              </div>
+
+              <!-- Selected customer preview -->
+              <div id="customer-preview" class="hidden mt-4 p-3 rounded-lg bg-slate-50 border border-slate-100">
+                <p class="text-[11px] font-semibold uppercase tracking-wide text-slate-500 mb-2">Selected customer</p>
+                <div class="space-y-1">
+                  <p class="text-sm font-semibold text-slate-900" id="preview-name">—</p>
+                  <p class="text-xs text-slate-600">
+                    <span id="preview-owner">—</span>
+                    <span class="mx-1.5">·</span>
+                    <span id="preview-phone">—</span>
+                  </p>
+                  <p class="text-xs text-slate-500" id="preview-address">—</p>
+                  <p class="text-[11px] text-brand-600 font-medium mt-1" id="preview-code">—</p>
+                </div>
+              </div>
+            </section>
+
+            <!-- PRODUCTS -->
+            <section class="bg-white rounded-xl border border-slate-200 p-4 sm:p-5">
+              <div class="flex items-center justify-between mb-3">
+                <h3 class="text-sm font-semibold text-slate-900 flex items-center gap-2">
+                  <span class="inline-flex items-center justify-center w-5 h-5 rounded-full bg-brand-100 text-brand-700 text-[10px] font-bold">2</span>
+                  Products
+                </h3>
+                <button type="button" id="add-product-row"
+                        class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-brand-50 text-brand-700
+                               text-xs font-semibold hover:bg-brand-100">
+                  <svg xmlns="http://www.w3.org/2000/svg" class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4" /></svg>
+                  Add product
+                </button>
+              </div>
+
+              <div class="hidden md:grid grid-cols-12 gap-2 px-3 py-2 text-[11px] font-semibold uppercase tracking-wider text-slate-500 bg-slate-50 rounded-lg mb-1">
+                <div class="col-span-4">Product</div>
+                <div class="col-span-3">Quantity</div>
+                <div class="col-span-2">Unit Price</div>
+                <div class="col-span-2 text-right">Line Total</div>
+                <div class="col-span-1 text-right">Remove</div>
+              </div>
+
+              <div id="product-rows" class="space-y-2"></div>
+
+              <p class="text-xs text-slate-500 mt-3">
+                Select a product — price auto-fills. Adjust quantity with − / +.
+              </p>
+            </section>
+
+            <!-- NOTES -->
+            <section class="bg-white rounded-xl border border-slate-200 p-4 sm:p-5">
+              <h3 class="text-sm font-semibold text-slate-900 mb-3 flex items-center gap-2">
+                <span class="inline-flex items-center justify-center w-5 h-5 rounded-full bg-brand-100 text-brand-700 text-[10px] font-bold">3</span>
+                Notes (optional)
+              </h3>
+
+              <div class="grid grid-cols-1 gap-3">
+                <div>
+                  <label for="customer-note" class="block text-sm font-medium text-slate-700 mb-1.5">Customer note</label>
+                  <input type="text" id="customer-note" name="customerNote" placeholder="Instructions for delivery"
+                         class="w-full px-3 py-2.5 sm:py-2 rounded-lg border border-slate-300 text-sm
+                                focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-brand-500" />
+                </div>
+                <div>
+                  <label for="internal-note" class="block text-sm font-medium text-slate-700 mb-1.5">Internal note</label>
+                  <input type="text" id="internal-note" name="internalNote" placeholder="Only visible to staff"
+                         class="w-full px-3 py-2.5 sm:py-2 rounded-lg border border-slate-300 text-sm
+                                focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-brand-500" />
+                </div>
+              </div>
+            </section>
+          </div>
+
+          <!-- RIGHT: Summary -->
+          <aside class="lg:col-span-1">
+            <div class="lg:sticky lg:top-20 space-y-4">
+
+              <div class="bg-white rounded-xl border border-slate-200 p-4 sm:p-5">
+                <h3 class="text-sm font-semibold text-slate-900 mb-3">Order Summary</h3>
+
+                <div id="summary-items" class="space-y-1.5 text-sm mb-3 max-h-40 overflow-y-auto">
+                  <p class="text-slate-400 text-xs">No products added yet.</p>
+                </div>
+
+                <hr class="border-slate-100" />
+
+                <div class="flex items-center justify-between text-sm mt-3">
+                  <span class="text-slate-600">Subtotal</span>
+                  <span class="font-medium text-slate-900" id="sum-subtotal">৳0.00</span>
+                </div>
+
+                <div class="mt-3">
+                  <label for="discount-input" class="block text-xs font-medium text-slate-600 mb-1">Discount (৳)</label>
+                  <input type="number" id="discount-input" name="discount" min="0" step="0.01" value="0"
+                         class="w-full px-3 py-2 rounded-lg border border-slate-300 text-sm text-right
+                                focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-brand-500" />
+                </div>
+
+                <div class="mt-3">
+                  <label for="delivery-input" class="block text-xs font-medium text-slate-600 mb-1">Delivery charge (৳)</label>
+                  <input type="number" id="delivery-input" name="deliveryCharge" min="0" step="0.01" value="0"
+                         class="w-full px-3 py-2 rounded-lg border border-slate-300 text-sm text-right
+                                focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-brand-500" />
+                </div>
+
+                <hr class="border-slate-100 my-3" />
+
+                <div class="flex items-center justify-between">
+                  <span class="text-sm font-semibold text-slate-900">Grand Total</span>
+                  <span class="text-lg font-bold text-brand-700" id="sum-grand">৳0.00</span>
+                </div>
+
+                <hr class="border-slate-100 my-3" />
+
+                <div class="space-y-3">
+                  <div>
+                    <label for="payment-method" class="block text-xs font-medium text-slate-600 mb-1">Payment method</label>
+                    <select id="payment-method" name="paymentMethod"
+                            class="w-full px-3 py-2 rounded-lg border border-slate-300 text-sm bg-white
+                                   focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-brand-500">
+                      <option value="Cash">Cash</option>
+                      <option value="bKash">bKash</option>
+                      <option value="Nagad">Nagad</option>
+                      <option value="Bank">Bank</option>
+                      <option value="Other">Other</option>
+                    </select>
+                  </div>
+
+                  <div>
+                    <label for="paid-input" class="block text-xs font-medium text-slate-600 mb-1">Paid amount (৳)</label>
+                    <input type="number" id="paid-input" name="paidAmount" min="0" step="0.01" value="0"
+                           class="w-full px-3 py-2 rounded-lg border border-slate-300 text-sm text-right
+                                  focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-brand-500" />
+                  </div>
+
+                  <div class="flex items-center justify-between text-sm">
+                    <span class="text-slate-600">Due</span>
+                    <span class="font-semibold text-red-600" id="sum-due">৳0.00</span>
+                  </div>
+                </div>
+
+                <hr class="border-slate-100 my-3" />
+
+                <div>
+                  <label for="status-select" class="block text-xs font-medium text-slate-600 mb-1">Order status</label>
+                  <select id="status-select" name="status"
+                          class="w-full px-3 py-2 rounded-lg border border-slate-300 text-sm bg-white
+                                 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-brand-500">
+                    <option>Pending</option>
+                    <option>Confirmed</option>
+                    <option>Processing</option>
+                  </select>
+                </div>
+              </div>
+
+              <div class="bg-white rounded-xl border border-slate-200 p-4 sm:p-5">
+                <button type="submit" id="submit-btn"
+                        class="w-full inline-flex items-center justify-center gap-2 px-4 py-3 rounded-lg
+                               bg-brand-600 hover:bg-brand-700 text-white font-semibold
+                               disabled:opacity-60 disabled:cursor-not-allowed">
+                  <span class="btn-label">Create Order</span>
+                </button>
+                <p class="text-[11px] text-slate-500 text-center mt-2">
+                  Order will be saved to Firestore.
+                </p>
+              </div>
+            </div>
+          </aside>
+        </div>
+      </form>
+    </main>
+
+    <footer class="border-t border-slate-200 bg-white">
+      <div class="px-4 lg:px-6 py-4 text-xs text-slate-500 text-center sm:text-left sm:flex sm:items-center sm:justify-between">
+        <p>© <span id="footer-year"></span> Order Management System</p>
+      </div>
+    </footer>
+  </div>
+
+  <!-- ══════════════════════════════════════════════════════
+       ADD CUSTOMER MODAL
+       ══════════════════════════════════════════════════════ -->
+  <div id="shop-modal" class="modal-backdrop" role="dialog" aria-modal="true"
+       aria-labelledby="shop-modal-title" aria-hidden="true">
+    <div class="modal-panel" role="document">
+
+      <div class="modal-grab"></div>
+
+      <div class="flex items-start justify-between gap-3 px-5 sm:px-6 pt-4 sm:pt-5 pb-3 border-b border-slate-100">
+        <div class="flex items-center gap-3 min-w-0">
+          <span class="inline-flex items-center justify-center w-10 h-10 rounded-xl bg-brand-50 text-brand-600 shrink-0">
+            <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M17 20h5v-2a4 4 0 00-3-3.87M9 20H4v-2a4 4 0 013-3.87m6-5.13a4 4 0 11-8 0 4 4 0 018 0zm6 3a3 3 0 11-6 0 3 3 0 016 0z" />
+            </svg>
+          </span>
+          <div class="min-w-0">
+            <h2 id="shop-modal-title" class="text-base sm:text-lg font-semibold text-slate-900">Add new customer</h2>
+            <p class="text-xs text-slate-500 mt-0.5">Unique code auto-generates (SHP-00001).</p>
+          </div>
+        </div>
+        <button type="button" id="shop-modal-close"
+                class="shrink-0 inline-flex items-center justify-center w-9 h-9 rounded-lg
+                       text-slate-400 hover:bg-slate-100 hover:text-slate-600"
+                aria-label="Close dialog">
+          <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+          </svg>
+        </button>
+      </div>
+
+      <div class="px-5 sm:px-6 py-4 overflow-y-auto">
+        <form id="shop-modal-form" novalidate autocomplete="off">
+
+          <div class="mb-3">
+            <label for="modal-shop-name" class="block text-sm font-medium text-slate-700 mb-1.5">
+              Customer name <span class="text-red-500">*</span>
+            </label>
+            <input type="text" id="modal-shop-name" required maxlength="80"
+                   placeholder="e.g. Main Store, Dhanmondi Branch"
+                   class="w-full px-3 py-2.5 rounded-lg border border-slate-300 text-sm
+                          focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-brand-500" />
+          </div>
+
+          <div class="mb-3">
+            <label for="modal-owner-name" class="block text-sm font-medium text-slate-700 mb-1.5">
+              Owner name <span class="text-red-500">*</span>
+            </label>
+            <input type="text" id="modal-owner-name" required maxlength="80"
+                   placeholder="e.g. John Doe"
+                   class="w-full px-3 py-2.5 rounded-lg border border-slate-300 text-sm
+                          focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-brand-500" />
+          </div>
+
+          <div class="mb-3">
+            <label for="modal-owner-phone" class="block text-sm font-medium text-slate-700 mb-1.5">
+              Phone <span class="text-red-500">*</span>
+            </label>
+            <input type="tel" id="modal-owner-phone" required
+                   placeholder="01XXXXXXXXX"
+                   class="w-full px-3 py-2.5 rounded-lg border border-slate-300 text-sm
+                          focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-brand-500" />
+          </div>
+
+          <div class="mb-3">
+            <label for="modal-address" class="block text-sm font-medium text-slate-700 mb-1.5">
+              Address <span class="text-red-500">*</span>
+            </label>
+            <textarea id="modal-address" rows="2" required maxlength="200"
+                      placeholder="House / Road / Area"
+                      class="w-full px-3 py-2.5 rounded-lg border border-slate-300 text-sm resize-y
+                             focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-brand-500"></textarea>
+          </div>
+
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div>
+              <label for="modal-area" class="block text-sm font-medium text-slate-700 mb-1.5">Area</label>
+              <input type="text" id="modal-area" maxlength="60"
+                     placeholder="e.g. Mirpur"
+                     class="w-full px-3 py-2.5 rounded-lg border border-slate-300 text-sm
+                            focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-brand-500" />
+            </div>
+            <div>
+              <label for="modal-district" class="block text-sm font-medium text-slate-700 mb-1.5">District</label>
+              <input type="text" id="modal-district" maxlength="60"
+                     placeholder="e.g. Dhaka"
+                     class="w-full px-3 py-2.5 rounded-lg border border-slate-300 text-sm
+                            focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-brand-500" />
+            </div>
+          </div>
+        </form>
+      </div>
+
+      <div class="flex items-center justify-end gap-2 px-5 sm:px-6 py-4 border-t border-slate-100">
+        <button type="button" id="shop-modal-cancel"
+                class="inline-flex items-center justify-center px-4 py-2.5 rounded-lg
+                       text-sm font-medium text-slate-700 hover:bg-slate-100">
+          Cancel
+        </button>
+        <button type="button" id="shop-modal-save"
+                class="inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg
+                       bg-brand-600 hover:bg-brand-700 text-white text-sm font-medium
+                       disabled:opacity-60 disabled:cursor-not-allowed">
+          <span class="save-label">Save Customer</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast -->
+  <div id="toast-container"
+       class="fixed top-4 right-4 left-4 sm:left-auto sm:top-6 sm:right-6 z-[9999]
+              flex flex-col gap-2 pointer-events-none"
+       role="region" aria-label="Notifications" aria-live="polite"></div>
+
+  <script type="module">
+    import { requireAuth, logoutUser } from "../assets/js/firebase/auth.js";
+    import { toast } from "../assets/js/utils/toast.js";
+    import {
+      queryCollectionCached,
+      createShopAtomic,
+      createOrderAtomic,
+      cacheClear,
+    } from "../assets/js/firebase/firestore.js";
+    import {
+      formatCurrency, isValidPhone, setFieldError,
+      clearFieldError, clearFormErrors, escapeHtml,
+    } from "../assets/js/utils/helpers.js";
+
+    /* ─── AUTH GUARD ──────────────────────────────────── */
+    let currentUser, currentProfile;
+    try {
+      const a = await requireAuth("../../login.html");
+      currentUser = a.user;
+      currentProfile = a.profile;
+    } catch { throw new Error("Unauthorized"); }
+
+    /* ─── USER UI ─────────────────────────────────────── */
+    const userName  = currentProfile?.name || currentUser.displayName || "User";
+    const userRole  = currentProfile?.role || "staff";
+    const userEmail = currentUser.email || "";
+    const initial   = (userName.charAt(0) || "U").toUpperCase();
+
+    document.getElementById("profile-avatar").textContent = initial;
+    document.getElementById("profile-name").textContent = userName;
+    document.getElementById("profile-role").textContent = capitalize(userRole);
+    document.getElementById("menu-name").textContent = userName;
+    document.getElementById("menu-email").textContent = userEmail;
+    document.getElementById("sidebar-avatar").textContent = initial;
+    document.getElementById("sidebar-name").textContent = userName;
+    document.getElementById("sidebar-role").textContent = capitalize(userRole);
+    document.getElementById("footer-year").textContent = new Date().getFullYear();
+
+    /* ─── SIDEBAR / NAVBAR ─────────────────────────────── */
+    const sidebar = document.getElementById("app-sidebar");
+    const overlay = document.getElementById("sidebar-overlay");
+    const toggleBtn = document.getElementById("sidebar-toggle");
+    const closeBtn  = document.getElementById("sidebar-close");
+    const openSidebar  = () => { sidebar.classList.add("is-open"); overlay.classList.add("is-visible"); document.body.classList.add("no-scroll"); };
+    const closeSidebar = () => { sidebar.classList.remove("is-open"); overlay.classList.remove("is-visible"); document.body.classList.remove("no-scroll"); };
+    toggleBtn.addEventListener("click", openSidebar);
+    closeBtn.addEventListener("click", closeSidebar);
+    overlay.addEventListener("click", closeSidebar);
+    sidebar.querySelectorAll("a.nav-link").forEach((a) => a.addEventListener("click", () => { if (innerWidth < 1024) closeSidebar(); }));
+    sidebar.querySelector(`a[href="${location.pathname.split("/").pop()}"]`)?.classList.add("active");
+
+    const profileBtn  = document.getElementById("profile-btn");
+    const profileMenu = document.getElementById("profile-menu");
+    profileBtn.addEventListener("click", (e) => { e.stopPropagation(); profileMenu.classList.toggle("hidden"); });
+    document.addEventListener("click", (e) => { if (!profileMenu.contains(e.target) && !profileBtn.contains(e.target)) profileMenu.classList.add("hidden"); });
+    document.addEventListener("keydown", (e) => {
+      if (e.key === "Escape") {
+        closeSidebar();
+        profileMenu.classList.add("hidden");
+      }
+    });
+
+    document.getElementById("logout-btn").addEventListener("click", async () => {
+      try { await logoutUser(); toast.success("Logged out"); setTimeout(() => location.replace("../../login.html"), 300); }
+      catch { toast.error("Logout failed"); }
+    });
+
+    /* ─── STATE ────────────────────────────────────────── */
+    const state = {
+      shops: [],
+      products: [],
+      rows: [],
+      rowCounter: 0,
+    };
+
+    /* ─── DOM REFS ────────────────────────────────────── */
+    const form = document.getElementById("order-form");
+    const customerSelect = document.getElementById("customer-select");
+    const customerHint = document.getElementById("customer-hint");
+    const addCustomerBtn = document.getElementById("add-customer-btn");
+    const productRowsEl = document.getElementById("product-rows");
+    const addProductRowBtn = document.getElementById("add-product-row");
+    const summaryItemsEl = document.getElementById("summary-items");
+    const sumSubtotal = document.getElementById("sum-subtotal");
+    const sumGrand = document.getElementById("sum-grand");
+    const sumDue = document.getElementById("sum-due");
+    const discountInput = document.getElementById("discount-input");
+    const deliveryInput = document.getElementById("delivery-input");
+    const paidInput = document.getElementById("paid-input");
+    const submitBtn = document.getElementById("submit-btn");
+
+    /* Customer preview refs */
+    const customerPreview = document.getElementById("customer-preview");
+    const previewName = document.getElementById("preview-name");
+    const previewOwner = document.getElementById("preview-owner");
+    const previewPhone = document.getElementById("preview-phone");
+    const previewAddress = document.getElementById("preview-address");
+    const previewCode = document.getElementById("preview-code");
+
+    /* ════════════════════════════════════════════════════
+       LOAD CUSTOMERS + PRODUCTS
+       ════════════════════════════════════════════════════ */
+    async function loadCustomersAndProducts() {
+      try {
+        const [shopsRes, productsRes] = await Promise.all([
+          queryCollectionCached("shops", {
+            order: [["name", "asc"]],
+            limitCount: 200,
+            cacheTtlMs: 300000,
+          }),
+          queryCollectionCached("products", {
+            filters: [["status", "==", "active"]],
+            order: [["name", "asc"]],
+            limitCount: 300,
+            cacheTtlMs: 300000,
+          }),
+        ]);
+        state.shops = shopsRes.items;
+        state.products = productsRes.items;
+        renderCustomerOptions();
+      } catch (err) {
+        console.error("Load data failed:", err);
+        toast.error("Could not load customers / products.");
+        customerSelect.innerHTML = `<option value="">Failed to load</option>`;
+      }
+    }
+
+    function renderCustomerOptions() {
+      if (state.shops.length === 0) {
+        customerSelect.innerHTML = `<option value="">No customers yet — add one</option>`;
+        customerHint.textContent = "Click “Add Customer” to create your first customer.";
+        return;
+      }
+      customerSelect.innerHTML = `<option value="">Select a customer…</option>` +
+        state.shops.map((s) => {
+          const code = s.code ? `${s.code} — ` : "";
+          const owner = s.ownerName ? ` (${s.ownerName})` : "";
+          return `<option value="${s.id}">${escapeHtml(code + s.name + owner)}</option>`;
+        }).join("");
+      customerHint.textContent = `${state.shops.length} customer${state.shops.length > 1 ? "s" : ""} available.`;
+    }
+
+    /* ─── CUSTOMER SELECT → preview ───────────────────── */
+    customerSelect.addEventListener("change", () => {
+      const shop = state.shops.find((s) => s.id === customerSelect.value);
+
+      if (!shop) {
+        customerPreview.classList.add("hidden");
+        return;
+      }
+
+      customerPreview.classList.remove("hidden");
+      previewName.textContent = shop.name || "—";
+      previewOwner.textContent = shop.ownerName || "No owner";
+      previewPhone.textContent = shop.ownerPhone || "No phone";
+      previewAddress.textContent = shop.address || "No address";
+      previewCode.textContent = shop.code || "";
+    });
+
+    /* ════════════════════════════════════════════════════
+       ADD CUSTOMER MODAL
+       ════════════════════════════════════════════════════ */
+    const shopModal       = document.getElementById("shop-modal");
+    const shopModalForm   = document.getElementById("shop-modal-form");
+    const modalShopName   = document.getElementById("modal-shop-name");
+    const modalOwnerName  = document.getElementById("modal-owner-name");
+    const modalOwnerPhone = document.getElementById("modal-owner-phone");
+    const modalAddress    = document.getElementById("modal-address");
+    const modalArea       = document.getElementById("modal-area");
+    const modalDistrict   = document.getElementById("modal-district");
+    const modalSaveBtn    = document.getElementById("shop-modal-save");
+    const modalCancelBtn  = document.getElementById("shop-modal-cancel");
+    const modalCloseBtn   = document.getElementById("shop-modal-close");
+
+    let lastFocusedEl = null;
+
+    function openShopModal() {
+      lastFocusedEl = document.activeElement;
+      shopModalForm.reset();
+      [modalShopName, modalOwnerName, modalOwnerPhone, modalAddress].forEach(clearFieldError);
+
+      shopModal.classList.add("is-open");
+      shopModal.setAttribute("aria-hidden", "false");
+      document.body.classList.add("no-scroll");
+
+      setTimeout(() => modalShopName.focus(), 80);
+      document.addEventListener("keydown", trapFocus);
+    }
+
+    function closeShopModal() {
+      shopModal.classList.remove("is-open");
+      shopModal.setAttribute("aria-hidden", "true");
+      document.body.classList.remove("no-scroll");
+      document.removeEventListener("keydown", trapFocus);
+      if (lastFocusedEl && typeof lastFocusedEl.focus === "function") lastFocusedEl.focus();
+    }
+
+    function trapFocus(e) {
+      if (e.key !== "Tab") return;
+      const focusables = shopModal.querySelectorAll(
+        'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
+      );
+      const list = Array.from(focusables).filter((el) => !el.disabled);
+      if (list.length === 0) return;
+      const first = list[0];
+      const last = list[list.length - 1];
+      if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last.focus(); }
+      else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus(); }
+    }
+
+    addCustomerBtn.addEventListener("click", openShopModal);
+    modalCancelBtn.addEventListener("click", closeShopModal);
+    modalCloseBtn.addEventListener("click", closeShopModal);
+    shopModal.addEventListener("click", (e) => { if (e.target === shopModal) closeShopModal(); });
+    document.addEventListener("keydown", (e) => {
+      if (e.key === "Escape" && shopModal.classList.contains("is-open")) closeShopModal();
+    });
+
+    [modalShopName, modalOwnerName, modalOwnerPhone, modalAddress].forEach((input) => {
+      input.addEventListener("input", () => clearFieldError(input));
+    });
+
+    /* ─── SAVE CUSTOMER ───────────────────────────────── */
+    modalSaveBtn.addEventListener("click", async () => {
+      const name       = modalShopName.value.trim();
+      const ownerName  = modalOwnerName.value.trim();
+      const ownerPhone = modalOwnerPhone.value.trim();
+      const address    = modalAddress.value.trim();
+      const area       = modalArea.value.trim();
+      const district   = modalDistrict.value.trim();
+
+      let hasError = false;
+      if (!name) { setFieldError(modalShopName, "Customer name required."); hasError = true; }
+      if (!ownerName) { setFieldError(modalOwnerName, "Owner name required."); hasError = true; }
+      if (!ownerPhone) { setFieldError(modalOwnerPhone, "Phone required."); hasError = true; }
+      else if (!isValidPhone(ownerPhone)) { setFieldError(modalOwnerPhone, "Invalid phone (01XXXXXXXXX)."); hasError = true; }
+      if (!address) { setFieldError(modalAddress, "Address required."); hasError = true; }
+      if (hasError) { modalShopName.focus(); return; }
+
+      modalSaveBtn.disabled = true;
+      const labelEl = modalSaveBtn.querySelector(".save-label");
+      const originalLabel = labelEl.textContent;
+      labelEl.textContent = "Saving…";
+
+      try {
+        const { shopId, code } = await createShopAtomic(
+          { name, ownerName, ownerPhone, address, area, district },
+          currentUser.uid
+        );
+
+        state.shops.push({
+          id: shopId, code, name, ownerName, ownerPhone, address, area, district,
+        });
+        state.shops.sort((a, b) => a.name.localeCompare(b.name));
+        renderCustomerOptions();
+        customerSelect.value = shopId;
+        customerSelect.dispatchEvent(new Event("change"));
+
+        cacheClear("q:shops");
+        closeShopModal();
+        toast.success(`Customer "${name}" created — ${code}`);
+      } catch (err) {
+        console.error("Save customer failed:", err);
+        toast.error("Failed to save customer. Please try again.");
+      } finally {
+        modalSaveBtn.disabled = false;
+        labelEl.textContent = originalLabel;
+      }
+    });
+
+    shopModalForm.addEventListener("submit", (e) => { e.preventDefault(); modalSaveBtn.click(); });
+
+    /* ════════════════════════════════════════════════════
+       PRODUCT ROWS
+       ════════════════════════════════════════════════════ */
+    function addProductRow() {
+      if (state.products.length === 0) {
+        toast.warning("No products available. Add products first.");
+        return;
+      }
+      const rowId = ++state.rowCounter;
+      state.rows.push({ rowId, productId: "", quantity: 1, unitPrice: 0 });
+      renderProductRows();
+      renderSummary();
+    }
+
+    function removeProductRow(rowId) {
+      state.rows = state.rows.filter((r) => r.rowId !== rowId);
+      renderProductRows();
+      renderSummary();
+    }
+
+    function updateRow(rowId, patch) {
+      const row = state.rows.find((r) => r.rowId === rowId);
+      if (!row) return;
+      Object.assign(row, patch);
+
+      // ⭐ Auto-fill unit price when product changes
+      if (patch.productId !== undefined) {
+        const prod = state.products.find((p) => p.id === patch.productId);
+        row.unitPrice = prod ? Number(prod.sellingPrice) || 0 : 0;
+      }
+
+      renderProductRows();
+      renderSummary();
+    }
+
+    /* ─── Increase / Decrease Qty ─────────────────────── */
+    function changeQty(rowId, delta) {
+      const row = state.rows.find((r) => r.rowId === rowId);
+      if (!row) return;
+      const newQty = Math.max(1, (Number(row.quantity) || 1) + delta);
+      updateRow(rowId, { quantity: newQty });
+    }
+
+    function renderProductRows() {
+      if (state.rows.length === 0) {
+        productRowsEl.innerHTML = `
+          <div class="text-center py-6 border-2 border-dashed border-slate-200 rounded-lg">
+            <p class="text-sm text-slate-500">No products added yet.</p>
+            <button type="button" id="empty-add-product"
+                    class="mt-2 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-brand-50 text-brand-700
+                           text-xs font-semibold hover:bg-brand-100">
+              + Add your first product
+            </button>
+          </div>`;
+        document.getElementById("empty-add-product")?.addEventListener("click", addProductRow);
+        return;
+      }
+
+      productRowsEl.innerHTML = state.rows.map(renderProductRow).join("");
+
+      state.rows.forEach((row) => {
+        const rowEl = productRowsEl.querySelector(`[data-row-id="${row.rowId}"]`);
+        if (!rowEl) return;
+
+        rowEl.querySelector(".row-product")?.addEventListener("change", (e) => {
+          updateRow(row.rowId, { productId: e.target.value });
+        });
+        rowEl.querySelector(".row-qty")?.addEventListener("input", (e) => {
+          const v = Math.max(1, parseInt(e.target.value, 10) || 1);
+          updateRow(row.rowId, { quantity: v });
+        });
+        rowEl.querySelector(".qty-minus")?.addEventListener("click", () => changeQty(row.rowId, -1));
+        rowEl.querySelector(".qty-plus")?.addEventListener("click", () => changeQty(row.rowId, +1));
+        rowEl.querySelector(".row-price")?.addEventListener("input", (e) => {
+          const v = Math.max(0, parseFloat(e.target.value) || 0);
+          updateRow(row.rowId, { unitPrice: v });
+        });
+        rowEl.querySelector(".row-remove")?.addEventListener("click", () => removeProductRow(row.rowId));
+      });
+    }
+
+    function renderProductRow(row) {
+      const options = [`<option value="">Select product…</option>`]
+        .concat(state.products.map((p) => {
+          const selected = p.id === row.productId ? "selected" : "";
+          const code = p.code ? `[${p.code}] ` : "";
+          const stock = p.stock != null ? ` — ${p.stock} ${p.unit || "pcs"}` : "";
+          const label = `${code}${p.name}${stock}`;
+          return `<option value="${p.id}" ${selected}>${escapeHtml(label)}</option>`;
+        })).join("");
+
+      const lineTotal = (Number(row.quantity) || 0) * (Number(row.unitPrice) || 0);
+      const qty = Number(row.quantity) || 1;
+
+      return `
+        <div data-row-id="${row.rowId}"
+             class="grid grid-cols-12 gap-2 p-2 sm:p-2.5 rounded-lg bg-slate-50 md:bg-transparent
+                    border border-slate-200 md:border-0 md:border-b md:border-slate-100 md:rounded-none md:pb-3">
+
+          <!-- Product -->
+          <div class="col-span-12 md:col-span-4">
+            <label class="md:hidden block text-[10px] font-medium text-slate-500 uppercase mb-1">Product</label>
+            <select class="row-product w-full px-3 py-2 rounded-lg border border-slate-300 text-sm bg-white
+                           focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-brand-500">
+              ${options}
+            </select>
+          </div>
+
+          <!-- Qty with +/- buttons -->
+          <div class="col-span-6 md:col-span-3">
+            <label class="md:hidden block text-[10px] font-medium text-slate-500 uppercase mb-1">Quantity</label>
+            <div class="qty-control">
+              <button type="button" class="qty-btn qty-minus" aria-label="Decrease quantity">
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M5 12h14"/>
+                </svg>
+              </button>
+              <input type="number" min="1" step="1" value="${qty}" class="row-qty" aria-label="Quantity" />
+              <button type="button" class="qty-btn qty-plus" aria-label="Increase quantity">
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M12 5v14M5 12h14"/>
+                </svg>
+              </button>
+            </div>
+          </div>
+
+          <!-- Unit price — READONLY, auto from product -->
+          <div class="col-span-6 md:col-span-2">
+            <label class="md:hidden block text-[10px] font-medium text-slate-500 uppercase mb-1">Unit price</label>
+            <input type="number" min="0" step="0.01" value="${row.unitPrice || 0}"
+                   readonly
+                   class="row-price w-full px-3 py-2 rounded-lg border border-slate-200 bg-slate-50 text-sm text-right
+                          text-slate-600 cursor-not-allowed" />
+          </div>
+
+          <!-- Line total -->
+          <div class="col-span-10 md:col-span-2 flex items-end md:items-center justify-end">
+            <span class="row-line-total text-sm font-semibold text-slate-900 whitespace-nowrap">
+              ${formatCurrency(lineTotal)}
+            </span>
+          </div>
+
+          <!-- Remove -->
+          <div class="col-span-2 md:col-span-1 flex items-end md:items-center justify-end">
+            <button type="button" class="row-remove p-1.5 rounded-md text-slate-400 hover:text-red-600 hover:bg-red-50"
+                    aria-label="Remove product">
+              <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+              </svg>
+            </button>
+          </div>
+        </div>
+      `;
+    }
+
+    addProductRowBtn.addEventListener("click", addProductRow);
+
+    /* ════════════════════════════════════════════════════
+       CALCULATIONS
+       ════════════════════════════════════════════════════ */
+    function calculate() {
+      const subtotal = state.rows.reduce((sum, r) => {
+        const q = Number(r.quantity) || 0;
+        const p = Number(r.unitPrice) || 0;
+        return sum + q * p;
+      }, 0);
+
+      const discount = Math.max(0, Number(discountInput.value) || 0);
+      const delivery = Math.max(0, Number(deliveryInput.value) || 0);
+      const paid = Math.max(0, Number(paidInput.value) || 0);
+
+      const grand = Math.max(0, subtotal - discount + delivery);
+      const due = Math.max(0, grand - paid);
+
+      return { subtotal, discount, delivery, paid, grand, due };
+    }
+
+    function renderSummary() {
+      const { subtotal, grand, due } = calculate();
+
+      if (state.rows.length === 0) {
+        summaryItemsEl.innerHTML = `<p class="text-slate-400 text-xs">No products added yet.</p>`;
+      } else {
+        summaryItemsEl.innerHTML = state.rows.map((r) => {
+          const prod = state.products.find((p) => p.id === r.productId);
+          const name = prod ? prod.name : "—";
+          const lineTotal = (Number(r.quantity) || 0) * (Number(r.unitPrice) || 0);
+          return `
+            <div class="flex items-start justify-between gap-2 text-xs">
+              <div class="min-w-0">
+                <p class="text-slate-700 truncate">${escapeHtml(name)}</p>
+                <p class="text-slate-400">${r.quantity} × ${formatCurrency(r.unitPrice || 0)}</p>
+              </div>
+              <span class="font-medium text-slate-700 whitespace-nowrap">${formatCurrency(lineTotal)}</span>
+            </div>
+          `;
+        }).join("");
+      }
+
+      sumSubtotal.textContent = formatCurrency(subtotal);
+      sumGrand.textContent = formatCurrency(grand);
+      sumDue.textContent = formatCurrency(due);
+      sumDue.className = `font-semibold ${due > 0 ? "text-red-600" : "text-green-600"}`;
+
+      // Update per-row line total (avoid full re-render)
+      state.rows.forEach((r) => {
+        const el = productRowsEl.querySelector(`[data-row-id="${r.rowId}"] .row-line-total`);
+        if (el) {
+          const t = (Number(r.quantity) || 0) * (Number(r.unitPrice) || 0);
+          el.textContent = formatCurrency(t);
+        }
+      });
+    }
+
+    [discountInput, deliveryInput, paidInput].forEach((inp) => inp.addEventListener("input", renderSummary));
+
+    /* ════════════════════════════════════════════════════
+       VALIDATION
+       ════════════════════════════════════════════════════ */
+    function validateForm() {
+      clearFormErrors(form);
+      let ok = true;
+
+      if (!customerSelect.value) {
+        setFieldError(customerSelect, "Please select a customer.");
+        ok = false;
+      }
+
+      if (state.rows.length === 0) {
+        toast.warning("Add at least 1 product.");
+        ok = false;
+      } else {
+        const bad = state.rows.find((r) => !r.productId || !r.quantity || r.quantity < 1);
+        if (bad) {
+          toast.warning("Complete every product row (product + quantity).");
+          ok = false;
+        }
+      }
+
+      const { grand, paid } = calculate();
+      if (paid > grand) {
+        setFieldError(paidInput, `Paid cannot exceed grand total (${formatCurrency(grand)}).`);
+        ok = false;
+      }
+
+      return ok;
+    }
+
+    /* ════════════════════════════════════════════════════
+       SUBMIT ORDER
+       ════════════════════════════════════════════════════ */
+    form.addEventListener("submit", async (e) => {
+      e.preventDefault();
+
+      if (!validateForm()) {
+        toast.error("Please fix the errors above.");
+        form.querySelector('[aria-invalid="true"]')?.focus();
+        return;
+      }
+
+      const shopId = customerSelect.value;
+      const shop = state.shops.find((s) => s.id === shopId);
+
+      const customer = {
+        name: shop?.ownerName || shop?.name || "—",
+        phone: shop?.ownerPhone || "—",
+        altPhone: shop?.ownerAltPhone || null,
+        address: shop?.address || "—",
+        area: shop?.area || null,
+        district: shop?.district || null,
+        customerCode: shop?.code || null,
+        customerName: shop?.name || null,
+      };
+
+      const items = state.rows.map((r) => {
+        const prod = state.products.find((p) => p.id === r.productId);
+        const qty = Number(r.quantity);
+        const price = Number(r.unitPrice);
+        return {
+          productId: r.productId,
+          name: prod?.name || "",
+          sku: prod?.sku || null,
+          productCode: prod?.code || null,
+          quantity: qty,
+          price,
+          total: qty * price,
+        };
+      });
+
+      const { subtotal, discount, delivery, paid, grand } = calculate();
+      const paymentMethod = document.getElementById("payment-method").value;
+
+      const orderPayload = {
+        customer,
+        items,
+        subtotal,
+        discount,
+        deliveryCharge: delivery,
+        grandTotal: grand,
+        delivery: { deliveryManId: null, status: "Pending" },
+        status: document.getElementById("status-select").value,
+        customerNote: document.getElementById("customer-note").value.trim() || null,
+        internalNote: document.getElementById("internal-note").value.trim() || null,
+      };
+
+      submitBtn.disabled = true;
+      submitBtn.querySelector(".btn-label").textContent = "Saving…";
+      submitBtn.classList.add("opacity-80");
+
+      try {
+        const { orderCode } = await createOrderAtomic(orderPayload, {
+          uid: currentUser.uid,
+          shopId,
+          paidAmount: paid,
+          paymentMethod,
+        });
+
+        cacheClear("q:orders");
+        cacheClear("q:transactions");
+
+        toast.success(`Order created — ${orderCode}`);
+        setTimeout(() => location.replace("orders.html"), 600);
+      } catch (err) {
+        console.error("Create order failed:", err);
+        toast.error("Failed to create order. Please try again.");
+        submitBtn.disabled = false;
+        submitBtn.querySelector(".btn-label").textContent = "Create Order";
+        submitBtn.classList.remove("opacity-80");
+      }
+    });
+
+    /* ─── BOOTSTRAP ───────────────────────────────────── */
+    (async function init() {
+      await loadCustomersAndProducts();
+
+      const params = new URLSearchParams(location.search);
+      const preselect = params.get("shop");
+      if (preselect && state.shops.find((s) => s.id === preselect)) {
+        customerSelect.value = preselect;
+        customerSelect.dispatchEvent(new Event("change"));
+      }
+
+      addProductRow();
+      renderSummary();
+    })();
+
+    function capitalize(s) { return s ? s.charAt(0).toUpperCase() + s.slice(1) : ""; }
+  </script>
+</body>
+</html>

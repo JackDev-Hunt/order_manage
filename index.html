@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <title>Loading — Order Management</title>
+  <link rel="stylesheet" href="assets/css/style.css" />
+</head>
+<body class="bg-slate-50 min-h-screen flex items-center justify-center">
+  <div class="text-center">
+    <div class="spinner spinner-lg text-brand-600 mx-auto mb-3"></div>
+    <p class="text-sm text-slate-500">Loading…</p>
+  </div>
+
+  <script type="module">
+    import { watchAuth } from "./assets/js/firebase/auth.js";
+
+    // Subscribe once — first emission decides where to go
+    const unsubscribe = watchAuth((user) => {
+      unsubscribe(); // one-shot
+      if (user) {
+        window.location.replace("pages/dashboard.html");
+      } else {
+        window.location.replace("login.html");
+      }
+    });
+  </script>
+</body>
+</html>
