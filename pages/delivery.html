@@ -69,6 +69,20 @@
       color: #2563eb;
       border-bottom-color: #2563eb;
     }
+
+    /* Locked deliver button */
+    .deliver-btn.locked,
+    .deliver-btn:disabled {
+      background: #e2e8f0 !important;
+      color: #94a3b8 !important;
+      cursor: not-allowed !important;
+      opacity: 0.75;
+      pointer-events: none;
+    }
+    .deliver-btn.locked svg,
+    .deliver-btn:disabled svg {
+      opacity: 0.6;
+    }
   </style>
 </head>
 
@@ -329,9 +343,7 @@
         </div>
       </div>
 
-      <!-- ═══════════════════════════════════════════════
-           TAB 1: PENDING DELIVERIES
-           ═══════════════════════════════════════════════ -->
+      <!-- TAB 1: PENDING DELIVERIES -->
       <div id="tab-content-pending">
         <div class="bg-white rounded-xl border border-slate-200 overflow-hidden">
           <div class="hidden md:block">
@@ -354,10 +366,8 @@
             </div>
           </div>
 
-          <!-- Mobile cards -->
           <div id="pending-cards" class="md:hidden divide-y divide-slate-100"></div>
 
-          <!-- Empty -->
           <div id="pending-empty" class="hidden p-8 sm:p-12 text-center">
             <div class="inline-flex items-center justify-center w-12 h-12 rounded-full bg-green-50 text-green-500 mb-3">
               <svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
@@ -368,7 +378,6 @@
             <p class="text-xs text-slate-500 mt-0.5">No pending deliveries.</p>
           </div>
 
-          <!-- Load more -->
           <div id="pending-load-more-wrap" class="hidden px-4 py-3 border-t border-slate-100 text-center">
             <button type="button" id="pending-load-more-btn"
                     class="inline-flex items-center gap-2 px-4 py-2 rounded-lg border border-slate-300
@@ -379,9 +388,7 @@
         </div>
       </div>
 
-      <!-- ═══════════════════════════════════════════════
-           TAB 2: DELIVERY MEN
-           ═══════════════════════════════════════════════ -->
+      <!-- TAB 2: DELIVERY MEN -->
       <div id="tab-content-men" class="hidden">
         <div class="flex items-center justify-end mb-3">
           <button type="button" id="add-delivery-btn"
@@ -447,9 +454,7 @@
     </footer>
   </div>
 
-  <!-- ══════════════════════════════════════════════════════
-       ASSIGN DELIVERY MODAL
-       ══════════════════════════════════════════════════════ -->
+  <!-- ASSIGN DELIVERY MODAL -->
   <div id="assign-modal" class="modal-backdrop" role="dialog" aria-modal="true"
        aria-labelledby="assign-modal-title" aria-hidden="true">
     <div class="modal-panel" role="document">
@@ -503,7 +508,7 @@
   </div>
 
   <!-- ══════════════════════════════════════════════════════
-       DELIVER ORDER MODAL (main delivery action)
+       DELIVER ORDER MODAL — with Discount field
        ══════════════════════════════════════════════════════ -->
   <div id="deliver-modal" class="modal-backdrop" role="dialog" aria-modal="true"
        aria-labelledby="deliver-modal-title" aria-hidden="true">
@@ -552,10 +557,15 @@
             <span class="text-slate-600">Delivered subtotal</span>
             <span class="font-medium text-slate-900" id="deliver-subtotal">৳0.00</span>
           </div>
-          <div class="flex items-center justify-between text-sm">
-            <span class="text-slate-600">Discount</span>
-            <span class="font-medium text-slate-900" id="deliver-discount">৳0.00</span>
+
+          <!-- ⭐ Discount input (editable) -->
+          <div class="flex items-center justify-between text-sm gap-2">
+            <label for="deliver-discount-input" class="text-slate-600 shrink-0">Discount (৳)</label>
+            <input type="number" id="deliver-discount-input" min="0" step="0.01" value="0"
+                   class="w-28 px-2 py-1 rounded-lg border border-slate-300 text-sm text-right
+                          focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-brand-500" />
           </div>
+
           <div class="flex items-center justify-between text-sm">
             <span class="text-slate-600">Delivery charge</span>
             <span class="font-medium text-slate-900" id="deliver-delivery">৳0.00</span>
@@ -624,9 +634,7 @@
     </div>
   </div>
 
-  <!-- ══════════════════════════════════════════════════════
-       ADD/EDIT DELIVERY MAN MODAL
-       ══════════════════════════════════════════════════════ -->
+  <!-- ADD/EDIT DELIVERY MAN MODAL -->
   <div id="delivery-modal" class="modal-backdrop" role="dialog" aria-modal="true"
        aria-labelledby="delivery-modal-title" aria-hidden="true">
     <div class="modal-panel" role="document">
@@ -770,14 +778,13 @@
       queryCollectionCached,
       createDeliveryManAtomic,
       updateDeliveryManAtomic,
-      deleteDocument,
       updateDocument,
       createDocument,
       cacheClear,
     } from "../assets/js/firebase/firestore.js";
     import {
       formatCurrency, isValidPhone, setFieldError,
-      clearFieldError, debounce, escapeHtml, timeAgo,
+      clearFieldError, debounce, escapeHtml,
     } from "../assets/js/utils/helpers.js";
 
     /* ─── AUTH GUARD ──────────────────────────────────── */
@@ -830,22 +837,23 @@
     /* ─── STATE ───────────────────────────────────────── */
     const PAGE_SIZE = 30;
     const state = {
-      tab: "pending",           // pending | men
-      orders: [],               // pending deliveries
-      men: [],                  // delivery men
+      tab: "pending",
+      orders: [],
+      men: [],
       ordersLastDoc: null,
       ordersHasMore: false,
       menLastDoc: null,
       menHasMore: false,
       loading: false,
       search: "",
-      // Action targets
       assigningOrderId: null,
       deliveringOrderId: null,
       editingManId: null,
-      // For deliver modal: track per-item delivered quantity
-      deliverItems: [],         // [{index, productId, name, qty, price, deliveredQty}]
+      deliverItems: [],
       deliverOrder: null,
+      // Delivery-time values
+      _orderDelivery: 0,
+      _deliveryDiscount: 0,
     };
 
     /* ─── DOM REFS ────────────────────────────────────── */
@@ -888,7 +896,6 @@
         tabMenBtn.classList.remove("active");
         tabContentPending.classList.remove("hidden");
         tabContentMen.classList.add("hidden");
-        // Update filter
         statusFilter.innerHTML = `
           <option value="">All</option>
           <option value="Pending">Pending</option>
@@ -929,7 +936,6 @@
         state.ordersLastDoc = null;
       }
 
-      // Load all orders, filter client-side (delivery.status != Delivered/Cancelled)
       let result;
       try {
         result = await queryCollectionCached("orders", {
@@ -949,10 +955,8 @@
       const fresh = result.items.filter((o) => {
         const dStatus = o.delivery?.status || "Pending";
         const oStatus = o.status || "Pending";
-        // Skip if already delivered or cancelled/returned
         if (dStatus === "Delivered") return false;
         if (["Delivered", "Cancelled", "Returned"].includes(oStatus)) return false;
-        // Skip if already in current list
         return !state.orders.find((existing) => existing.id === o.id);
       });
 
@@ -1023,6 +1027,11 @@
       return `<span class="badge ${cls}"><span class="badge-dot"></span>${escapeHtml(status || "Pending")}</span>`;
     }
 
+    /* ─── Check if order is already delivered ─────────── */
+    function isDelivered(o) {
+      return o.delivery?.status === "Delivered" || o.status === "Delivered";
+    }
+
     /* ─── PENDING ROW ─────────────────────────────────── */
     function renderPendingRow(o) {
       const orderCode = escapeHtml(o.orderCode || o.id.slice(0, 8));
@@ -1034,9 +1043,45 @@
       const dueStr = formatCurrency(due);
       const manName = escapeHtml(o.deliveryManName || "—");
       const dStatus = o.delivery?.status || "Pending";
+      const delivered = isDelivered(o);
+
+      // ⭐ Action button logic
+      let actionHtml = "";
+      if (delivered) {
+        // Already delivered → locked button
+        actionHtml = `
+          <button type="button" class="deliver-btn locked inline-flex items-center justify-center gap-1 px-2.5 py-1.5 rounded-md text-xs font-medium"
+                  disabled
+                  title="Already delivered">
+            <svg xmlns="http://www.w3.org/2000/svg" class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+            </svg>
+            Delivered
+          </button>`;
+      } else if (!o.deliveryManId) {
+        actionHtml = `
+          <button type="button" class="assign-btn inline-flex items-center justify-center gap-1 px-2.5 py-1.5 rounded-md text-xs font-medium
+                       text-brand-700 bg-brand-50 hover:bg-brand-100 border border-brand-200"
+                  data-id="${o.id}">
+            <svg xmlns="http://www.w3.org/2000/svg" class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4" />
+            </svg>
+            Assign
+          </button>`;
+      } else {
+        actionHtml = `
+          <button type="button" class="deliver-btn inline-flex items-center justify-center gap-1 px-2.5 py-1.5 rounded-md text-xs font-medium
+                       text-white bg-green-600 hover:bg-green-700"
+                  data-id="${o.id}">
+            <svg xmlns="http://www.w3.org/2000/svg" class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" />
+            </svg>
+            Deliver
+          </button>`;
+      }
 
       return `
-        <tr class="hover:bg-slate-50" data-id="${o.id}">
+        <tr class="hover:bg-slate-50 ${delivered ? "bg-slate-50/50" : ""}" data-id="${o.id}">
           <td class="px-4 py-3">
             <span class="inline-flex items-center px-2 py-0.5 rounded-md bg-brand-50 text-brand-700 text-[11px] font-semibold whitespace-nowrap">
               ${orderCode}
@@ -1061,24 +1106,7 @@
           <td class="px-4 py-3 text-center">${deliveryStatusBadge(dStatus)}</td>
           <td class="px-4 py-3">
             <div class="flex items-center justify-end gap-1">
-              ${!o.deliveryManId
-                ? `<button type="button" class="assign-btn inline-flex items-center justify-center gap-1 px-2.5 py-1.5 rounded-md text-xs font-medium
-                             text-brand-700 bg-brand-50 hover:bg-brand-100 border border-brand-200"
-                          data-id="${o.id}">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                      <path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4" />
-                    </svg>
-                    Assign
-                   </button>`
-                : `<button type="button" class="deliver-btn inline-flex items-center justify-center gap-1 px-2.5 py-1.5 rounded-md text-xs font-medium
-                             text-white bg-green-600 hover:bg-green-700"
-                          data-id="${o.id}">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                      <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" />
-                    </svg>
-                    Deliver
-                   </button>`
-              }
+              ${actionHtml}
             </div>
           </td>
         </tr>
@@ -1093,9 +1121,41 @@
       const due = o.payment?.due || 0;
       const manName = escapeHtml(o.deliveryManName || "Not assigned");
       const dStatus = o.delivery?.status || "Pending";
+      const delivered = isDelivered(o);
+
+      let actionHtml = "";
+      if (delivered) {
+        actionHtml = `
+          <button type="button" class="deliver-btn locked w-full inline-flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg text-xs font-medium" disabled>
+            <svg xmlns="http://www.w3.org/2000/svg" class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+            </svg>
+            Already Delivered
+          </button>`;
+      } else if (!o.deliveryManId) {
+        actionHtml = `
+          <button type="button" class="assign-btn w-full inline-flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg
+                       bg-brand-600 hover:bg-brand-700 text-white text-xs font-medium"
+                  data-id="${o.id}">
+            <svg xmlns="http://www.w3.org/2000/svg" class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4" />
+            </svg>
+            Assign Delivery Man
+          </button>`;
+      } else {
+        actionHtml = `
+          <button type="button" class="deliver-btn w-full inline-flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg
+                       bg-green-600 hover:bg-green-700 text-white text-xs font-medium"
+                  data-id="${o.id}">
+            <svg xmlns="http://www.w3.org/2000/svg" class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" />
+            </svg>
+            Mark Delivered
+          </button>`;
+      }
 
       return `
-        <div class="p-4" data-id="${o.id}">
+        <div class="p-4 ${delivered ? "bg-slate-50/50" : ""}" data-id="${o.id}">
           <div class="flex items-start justify-between gap-3 mb-3">
             <div class="min-w-0">
               <span class="inline-flex items-center px-2 py-0.5 rounded-md bg-brand-50 text-brand-700 text-[10px] font-semibold">${orderCode}</span>
@@ -1120,24 +1180,7 @@
             </div>
           </div>
 
-          ${!o.deliveryManId
-            ? `<button type="button" class="assign-btn w-full inline-flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg
-                          bg-brand-600 hover:bg-brand-700 text-white text-xs font-medium"
-                      data-id="${o.id}">
-                <svg xmlns="http://www.w3.org/2000/svg" class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                  <path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4" />
-                </svg>
-                Assign Delivery Man
-               </button>`
-            : `<button type="button" class="deliver-btn w-full inline-flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg
-                          bg-green-600 hover:bg-green-700 text-white text-xs font-medium"
-                      data-id="${o.id}">
-                <svg xmlns="http://www.w3.org/2000/svg" class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                  <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" />
-                </svg>
-                Mark Delivered
-               </button>`
-          }
+          ${actionHtml}
         </div>
       `;
     }
@@ -1323,7 +1366,6 @@
       const pending = state.orders.filter((o) => (o.delivery?.status || "Pending") === "Pending").length;
       const assigned = state.orders.filter((o) => o.deliveryManId && (o.delivery?.status || "Pending") !== "Delivered").length;
 
-      // Today's delivered
       const today = new Date();
       const startOfToday = new Date(today.getFullYear(), today.getMonth(), today.getDate());
       let deliveredToday = 0;
@@ -1359,7 +1401,12 @@
       const order = state.orders.find((o) => o.id === orderId);
       if (!order) return;
 
-      // Need delivery men — load if not already
+      // ⭐ Block if already delivered
+      if (isDelivered(order)) {
+        toast.warning("This order is already delivered and locked.");
+        return;
+      }
+
       if (state.men.length === 0) {
         loadDeliveryMen({ reset: true }).then(() => renderAssignOptions());
       } else {
@@ -1410,13 +1457,19 @@
       const man = state.men.find((m) => m.id === manId);
       if (!order || !man) return;
 
+      // Double-check
+      if (isDelivered(order)) {
+        toast.warning("Order is already delivered.");
+        closeAssignModal();
+        return;
+      }
+
       assignConfirm.disabled = true;
       const labelEl = assignConfirm.querySelector(".btn-label");
       const original = labelEl.textContent;
       labelEl.textContent = "Assigning…";
 
       try {
-        // Update order: deliveryManId, deliveryManName, delivery.status="Assigned", order.status="Assigned"
         await updateDocument("orders", order.id, {
           "delivery.deliveryManId": manId,
           "delivery.deliveryManCode": man.code || null,
@@ -1425,12 +1478,10 @@
           "delivery.status": "Assigned",
           "delivery.assignedAt": new Date(),
           "status": "Assigned",
-          // Denormalized for quick display
           deliveryManId: manId,
           deliveryManName: man.name || null,
         });
 
-        // Update local
         order.delivery = order.delivery || {};
         order.delivery.deliveryManId = manId;
         order.delivery.deliveryManName = man.name;
@@ -1440,7 +1491,6 @@
         order.deliveryManName = man.name;
         order.status = "Assigned";
 
-        // Update man stats
         const newAssigned = (man.stats?.totalAssigned || 0) + 1;
         await updateDocument("deliveryMen", manId, {
           "stats.totalAssigned": newAssigned,
@@ -1465,7 +1515,7 @@
     });
 
     /* ════════════════════════════════════════════════════
-       DELIVER MODAL
+       DELIVER MODAL — with discount
        ════════════════════════════════════════════════════ */
     const deliverModal = document.getElementById("deliver-modal");
     const deliverModalSub = document.getElementById("deliver-modal-sub");
@@ -1474,7 +1524,7 @@
     const deliverCustomerAddress = document.getElementById("deliver-customer-address");
     const deliverItemsEl = document.getElementById("deliver-items");
     const deliverSubtotalEl = document.getElementById("deliver-subtotal");
-    const deliverDiscountEl = document.getElementById("deliver-discount");
+    const deliverDiscountInput = document.getElementById("deliver-discount-input");
     const deliverDeliveryEl = document.getElementById("deliver-delivery");
     const deliverTotalEl = document.getElementById("deliver-total");
     const deliverPaidInput = document.getElementById("deliver-paid");
@@ -1489,6 +1539,12 @@
       const order = state.orders.find((o) => o.id === orderId);
       if (!order) return;
 
+      // ⭐ Block if already delivered
+      if (isDelivered(order)) {
+        toast.warning("This order has already been delivered. Cannot deliver twice.");
+        return;
+      }
+
       state.deliverOrder = order;
       state.deliverItems = (order.items || []).map((item, index) => ({
         index,
@@ -1496,30 +1552,32 @@
         name: item.name || "—",
         qty: Number(item.quantity) || 0,
         price: Number(item.price) || 0,
-        deliveredQty: Number(item.quantity) || 0,   // Default full
+        deliveredQty: Number(item.quantity) || 0,
       }));
 
-      // Populate customer
       deliverModalSub.textContent = order.orderCode || order.id.slice(0, 8);
       deliverCustomerName.textContent = order.customer?.name || "—";
       deliverCustomerPhone.textContent = order.customer?.phone || "—";
       deliverCustomerAddress.textContent = order.customer?.address || "—";
 
-      // Prefill paid = original payment paid amount
+      // Prefill values
       deliverPaidInput.value = order.payment?.paid || 0;
       deliverMethodSel.value = order.payment?.method || "Cash";
       deliverNoteInput.value = "";
 
-      // Store discount & delivery charge for calc
-      state._orderDiscount = Number(order.discount) || 0;
+      // Prefill discount from order
+      const orderDiscount = Number(order.discount) || 0;
+      deliverDiscountInput.value = orderDiscount;
+
+      // Store delivery charge
       state._orderDelivery = Number(order.deliveryCharge) || 0;
 
-      // Render items
       renderDeliverItems();
       recalcDeliver();
 
-      // Wire paid input
-      deliverPaidInput.addEventListener("input", recalcDeliver);
+      // Wire up inputs — remove old listeners first by replacing oninput
+      deliverPaidInput.oninput = recalcDeliver;
+      deliverDiscountInput.oninput = recalcDeliver;
 
       deliverModal.classList.add("is-open");
       deliverModal.setAttribute("aria-hidden", "false");
@@ -1568,7 +1626,6 @@
         </div>
       `).join("");
 
-      // Wire events
       deliverItemsEl.querySelectorAll(".deliver-qty-input").forEach((input) => {
         input.addEventListener("input", () => {
           const idx = Number(input.dataset.index);
@@ -1601,20 +1658,30 @@
       });
     }
 
+    /* ─── Recalculate delivery totals ─────────────────── */
     function recalcDeliver() {
       const subtotal = state.deliverItems.reduce((s, it) => s + it.deliveredQty * it.price, 0);
-      const discount = state._orderDiscount || 0;
+
+      // ⭐ Read discount from input (user editable)
+      const discount = Math.max(0, Number(deliverDiscountInput.value) || 0);
       const delivery = state._orderDelivery || 0;
+
       const total = Math.max(0, subtotal - discount + delivery);
       const paid = Math.max(0, Number(deliverPaidInput.value) || 0);
       const due = Math.max(0, total - paid);
 
       deliverSubtotalEl.textContent = formatCurrency(subtotal);
-      deliverDiscountEl.textContent = formatCurrency(discount);
       deliverDeliveryEl.textContent = formatCurrency(delivery);
       deliverTotalEl.textContent = formatCurrency(total);
       deliverDueEl.textContent = formatCurrency(due);
       deliverDueEl.className = `font-bold ${due > 0 ? "text-red-700" : "text-green-700"}`;
+
+      // Validate discount not exceeding subtotal
+      if (discount > subtotal) {
+        deliverDiscountInput.classList.add("border-red-500", "focus:ring-red-500");
+      } else {
+        deliverDiscountInput.classList.remove("border-red-500", "focus:ring-red-500");
+      }
     }
 
     function closeDeliverModal() {
@@ -1633,8 +1700,17 @@
       if (!state.deliverOrder) return;
 
       const order = state.deliverOrder;
+
+      // ⭐ Double-check lock
+      if (isDelivered(order)) {
+        toast.warning("This order has already been delivered. Cannot deliver twice.");
+        closeDeliverModal();
+        renderPending();
+        return;
+      }
+
       const subtotal = state.deliverItems.reduce((s, it) => s + it.deliveredQty * it.price, 0);
-      const discount = state._orderDiscount || 0;
+      const discount = Math.max(0, Number(deliverDiscountInput.value) || 0);
       const delivery = state._orderDelivery || 0;
       const total = Math.max(0, subtotal - discount + delivery);
       const paid = Math.max(0, Number(deliverPaidInput.value) || 0);
@@ -1642,9 +1718,16 @@
       const method = deliverMethodSel.value;
       const note = deliverNoteInput.value.trim();
 
-      // Validation
+      // Validations
+      if (discount > subtotal) {
+        toast.warning(`Discount cannot exceed subtotal (${formatCurrency(subtotal)}).`);
+        deliverDiscountInput.focus();
+        return;
+      }
+
       if (paid > total) {
         toast.warning(`Paid cannot exceed total (${formatCurrency(total)}).`);
+        deliverPaidInput.focus();
         return;
       }
 
@@ -1656,7 +1739,6 @@
       labelEl.textContent = "Delivering…";
 
       try {
-        // Update order: delivery status = Delivered, payment updated
         const deliveredItems = state.deliverItems.map((it) => {
           const original = order.items[it.index] || {};
           return {
@@ -1672,35 +1754,40 @@
           "delivery.collectedAmount": paid,
           "delivery.paymentMethod": method,
           "delivery.note": note || null,
+          "delivery.locked": true,           // ⭐ extra safety lock
           "status": "Delivered",
-          // Payment snapshot
+          discount,                          // ⭐ updated discount
+          subtotal,
+          deliveryCharge: delivery,
+          grandTotal: total,
           "payment.paid": paid,
           "payment.due": due,
           "payment.method": method,
           "payment.status": paymentStatus,
-          // Delivered items
           items: deliveredItems,
         });
 
-        // Create a transaction record
-        const txnCode = "TXN-" + Date.now().toString(36).toUpperCase().slice(-6);
-        await createDocument("transactions", {
-          code: txnCode,
-          shopId: order.shopId,
-          shopCode: order.shopCode,
-          shopName: order.shopName,
-          orderId: order.id,
-          orderCode: order.orderCode,
-          type: "payment",
-          amount: paid,
-          method,
-          note: note || "Delivery payment",
-          orderPaidAfter: paid,
-          orderDueAfter: due,
-          createdBy: currentUser.uid,
-        });
+        // Transaction record (only if paid > 0)
+        if (paid > 0) {
+          const txnCode = "TXN-" + Date.now().toString(36).toUpperCase().slice(-6);
+          await createDocument("transactions", {
+            code: txnCode,
+            shopId: order.shopId,
+            shopCode: order.shopCode,
+            shopName: order.shopName,
+            orderId: order.id,
+            orderCode: order.orderCode,
+            type: "payment",
+            amount: paid,
+            method,
+            note: note || "Delivery payment",
+            orderPaidAfter: paid,
+            orderDueAfter: due,
+            createdBy: currentUser.uid,
+          });
+        }
 
-        // Update delivery man stats
+        // Delivery man stats
         if (order.deliveryManId) {
           const man = state.men.find((m) => m.id === order.deliveryManId);
           if (man) {
@@ -1713,11 +1800,15 @@
           }
         }
 
-        // Update local
+        // Update local state
         order.delivery = order.delivery || {};
         order.delivery.status = "Delivered";
         order.delivery.collectedAmount = paid;
+        order.delivery.locked = true;
         order.status = "Delivered";
+        order.discount = discount;
+        order.subtotal = subtotal;
+        order.grandTotal = total;
         order.payment = order.payment || {};
         order.payment.paid = paid;
         order.payment.due = due;
@@ -1730,7 +1821,16 @@
         closeDeliverModal();
         renderPending();
         computeSummary();
-        toast.success(`Order ${order.orderCode || ""} delivered — ${formatCurrency(paid)} collected`);
+
+        if (paid > 0) {
+          toast.success(`Order ${order.orderCode || ""} delivered — ${formatCurrency(paid)} collected`);
+        } else {
+          toast.success(`Order ${order.orderCode || ""} delivered — no collection`);
+        }
+
+        if (due > 0) {
+          setTimeout(() => toast.warning(`Still due: ${formatCurrency(due)}`), 500);
+        }
       } catch (err) {
         console.error("Deliver failed:", err);
         toast.error("Failed to mark as delivered.");
@@ -1863,19 +1963,18 @@
        DELEGATED CLICKS
        ════════════════════════════════════════════════════ */
     document.addEventListener("click", (e) => {
-      // Assign
       const assignBtn = e.target.closest(".assign-btn");
       if (assignBtn) {
         openAssignModal(assignBtn.dataset.id);
         return;
       }
-      // Deliver
       const deliverBtn = e.target.closest(".deliver-btn");
       if (deliverBtn) {
+        // ⭐ Extra block: never allow if locked/disabled
+        if (deliverBtn.disabled || deliverBtn.classList.contains("locked")) return;
         openDeliverModal(deliverBtn.dataset.id);
         return;
       }
-      // Edit man
       const manEditBtn = e.target.closest(".man-edit-btn");
       if (manEditBtn) {
         const man = state.men.find((m) => m.id === manEditBtn.dataset.id);
@@ -1928,7 +2027,6 @@
 
     /* ─── BOOTSTRAP ───────────────────────────────────── */
     (async function init() {
-      // Load both in parallel
       await Promise.all([
         loadPendingOrders({ reset: true }),
         loadDeliveryMen({ reset: true }),

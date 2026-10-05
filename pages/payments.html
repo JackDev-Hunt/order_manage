@@ -47,12 +47,28 @@
         box-shadow: 0 20px 60px rgba(15, 23, 42, 0.25);
         animation: modalFadeScale 0.22s cubic-bezier(0.16, 1, 0.3, 1);
       }
+      .modal-panel-wide { max-width: 900px !important; }
     }
     @keyframes modalSlideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
     @keyframes modalFadeScale { from { opacity: 0; transform: scale(0.96); } to { opacity: 1; transform: scale(1); } }
     @keyframes modalBackdropFade { from { opacity: 0; } to { opacity: 1; } }
     .modal-grab { width: 40px; height: 4px; border-radius: 9999px; background: #cbd5e1; margin: 8px auto 0; }
     @media (min-width: 640px) { .modal-grab { display: none; } }
+
+    .tab-btn {
+      padding: 10px 16px;
+      font-size: 14px;
+      font-weight: 500;
+      color: #64748b;
+      border-bottom: 2px solid transparent;
+      transition: all 0.15s;
+      white-space: nowrap;
+    }
+    .tab-btn:hover { color: #334155; }
+    .tab-btn.active {
+      color: #2563eb;
+      border-bottom-color: #2563eb;
+    }
   </style>
 </head>
 
@@ -207,20 +223,12 @@
             </svg>
             <span class="hidden sm:inline">Refresh</span>
           </button>
-          <a href="order-create.html"
-             class="inline-flex items-center gap-2 px-3 py-2 rounded-lg bg-brand-600 hover:bg-brand-700
-                    text-sm font-medium text-white">
-            <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-              <path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4" />
-            </svg>
-            New Order
-          </a>
         </div>
       </div>
 
       <!-- Summary cards -->
       <section aria-label="Payment summary"
-               class="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4 mb-4">
+               class="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4 mb-4">
         <div class="bg-white rounded-xl border border-slate-200 p-4 sm:p-5">
           <div class="flex items-start justify-between">
             <div class="min-w-0">
@@ -265,111 +273,199 @@
             </span>
           </div>
         </div>
+
+        <div class="bg-white rounded-xl border border-slate-200 p-4 sm:p-5">
+          <div class="flex items-start justify-between">
+            <div class="min-w-0">
+              <p class="text-xs font-medium text-slate-500 uppercase tracking-wide">Total Due</p>
+              <p class="text-2xl font-bold text-red-600 mt-1" id="sum-due">—</p>
+              <p class="text-xs text-slate-500 mt-1">Outstanding</p>
+            </div>
+            <span class="inline-flex items-center justify-center w-10 h-10 rounded-lg bg-red-50 text-red-600 shrink-0">
+              <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01M4.93 19h14.14a2 2 0 001.74-2.97L13.74 4.97a2 2 0 00-3.48 0L3.2 16.03A2 2 0 004.93 19z" />
+              </svg>
+            </span>
+          </div>
+        </div>
       </section>
 
-      <!-- Filter bar -->
-      <div class="bg-white rounded-xl border border-slate-200 p-3 sm:p-4 mb-4">
-        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-3">
+      <!-- Tabs -->
+      <div class="bg-white rounded-xl border border-slate-200 mb-4 overflow-hidden">
+        <div class="flex border-b border-slate-200 overflow-x-auto">
+          <button type="button" id="tab-dues" class="tab-btn active">
+            Pending Dues
+            <span id="tab-dues-count" class="ml-1.5 inline-flex items-center justify-center min-w-[20px] h-5 px-1.5 rounded-full bg-red-100 text-red-700 text-[10px] font-semibold">0</span>
+          </button>
+          <button type="button" id="tab-txns" class="tab-btn">
+            Transaction History
+            <span id="tab-txns-count" class="ml-1.5 inline-flex items-center justify-center min-w-[20px] h-5 px-1.5 rounded-full bg-slate-100 text-slate-600 text-[10px] font-semibold">0</span>
+          </button>
+          <button type="button" id="tab-ledger" class="tab-btn">
+            Customer Ledger
+            <span class="ml-1.5 inline-flex items-center justify-center min-w-[20px] h-5 px-1.5 rounded-full bg-brand-100 text-brand-700 text-[10px] font-semibold">📒</span>
+          </button>
+        </div>
 
-          <!-- Search -->
-          <div class="lg:col-span-2">
-            <label for="search-input" class="sr-only">Search payments</label>
-            <div class="relative">
-              <span class="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none">
-                <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                  <path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-4.35-4.35M17 10.5a6.5 6.5 0 11-13 0 6.5 6.5 0 0113 0z" /></svg>
-              </span>
-              <input type="search" id="search-input" placeholder="Order ID, customer, shop, txn code…"
-                     class="w-full pl-9 pr-3 py-2.5 sm:py-2 rounded-lg border border-slate-300 text-sm
-                            focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-brand-500" />
+        <div class="p-3 sm:p-4">
+          <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-3">
+            <div class="lg:col-span-2">
+              <label for="search-input" class="sr-only">Search</label>
+              <div class="relative">
+                <span class="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none">
+                  <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-4.35-4.35M17 10.5a6.5 6.5 0 11-13 0 6.5 6.5 0 0113 0z" /></svg>
+                </span>
+                <input type="search" id="search-input" placeholder="Search by customer name, phone, order code…"
+                       class="w-full pl-9 pr-3 py-2.5 sm:py-2 rounded-lg border border-slate-300 text-sm
+                              focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-brand-500" />
+              </div>
+            </div>
+
+            <div>
+              <label for="method-filter" class="sr-only">Payment method</label>
+              <select id="method-filter"
+                      class="w-full px-3 py-2.5 sm:py-2 rounded-lg border border-slate-300 text-sm bg-white
+                             focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-brand-500">
+                <option value="">All methods</option>
+                <option value="Cash">Cash</option>
+                <option value="bKash">bKash</option>
+                <option value="Nagad">Nagad</option>
+                <option value="Bank">Bank</option>
+                <option value="Other">Other</option>
+              </select>
+            </div>
+
+            <div>
+              <label for="date-filter" class="sr-only">Date range</label>
+              <select id="date-filter"
+                      class="w-full px-3 py-2.5 sm:py-2 rounded-lg border border-slate-300 text-sm bg-white
+                             focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-brand-500">
+                <option value="all">All time</option>
+                <option value="today">Today</option>
+                <option value="week">This week</option>
+                <option value="month">This month</option>
+                <option value="year">This year</option>
+              </select>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- TAB 1: PENDING DUES -->
+      <div id="tab-content-dues">
+        <div class="bg-white rounded-xl border border-slate-200 overflow-hidden">
+          <div class="hidden md:block">
+            <div class="overflow-x-auto">
+              <table class="w-full" aria-label="Pending dues">
+                <thead>
+                  <tr class="border-b border-slate-200 bg-slate-50">
+                    <th class="text-left text-[11px] font-semibold uppercase tracking-wider text-slate-500 px-4 py-3 whitespace-nowrap">Order</th>
+                    <th class="text-left text-[11px] font-semibold uppercase tracking-wider text-slate-500 px-4 py-3">Customer</th>
+                    <th class="text-right text-[11px] font-semibold uppercase tracking-wider text-slate-500 px-4 py-3">Total</th>
+                    <th class="text-right text-[11px] font-semibold uppercase tracking-wider text-slate-500 px-4 py-3">Paid</th>
+                    <th class="text-right text-[11px] font-semibold uppercase tracking-wider text-slate-500 px-4 py-3">Due</th>
+                    <th class="text-center text-[11px] font-semibold uppercase tracking-wider text-slate-500 px-4 py-3">Status</th>
+                    <th class="text-right text-[11px] font-semibold uppercase tracking-wider text-slate-500 px-4 py-3">Actions</th>
+                  </tr>
+                </thead>
+                <tbody id="dues-tbody" class="divide-y divide-slate-100"></tbody>
+              </table>
             </div>
           </div>
 
-          <!-- Method filter -->
-          <div>
-            <label for="method-filter" class="sr-only">Payment method</label>
-            <select id="method-filter"
-                    class="w-full px-3 py-2.5 sm:py-2 rounded-lg border border-slate-300 text-sm bg-white
-                           focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-brand-500">
-              <option value="">All methods</option>
-              <option value="Cash">Cash</option>
-              <option value="bKash">bKash</option>
-              <option value="Nagad">Nagad</option>
-              <option value="Bank">Bank</option>
-              <option value="Other">Other</option>
-            </select>
+          <div id="dues-cards" class="md:hidden divide-y divide-slate-100"></div>
+
+          <div id="dues-empty" class="hidden p-8 sm:p-12 text-center">
+            <div class="inline-flex items-center justify-center w-12 h-12 rounded-full bg-green-50 text-green-500 mb-3">
+              <svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" />
+              </svg>
+            </div>
+            <p class="text-sm font-medium text-slate-700">All payments cleared!</p>
+            <p class="text-xs text-slate-500 mt-0.5">No pending dues.</p>
           </div>
 
-          <!-- Date range filter -->
-          <div>
-            <label for="date-filter" class="sr-only">Date range</label>
-            <select id="date-filter"
-                    class="w-full px-3 py-2.5 sm:py-2 rounded-lg border border-slate-300 text-sm bg-white
-                           focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-brand-500">
-              <option value="all">All time</option>
-              <option value="today">Today</option>
-              <option value="week">This week</option>
-              <option value="month">This month</option>
-            </select>
+          <div id="dues-load-more-wrap" class="hidden px-4 py-3 border-t border-slate-100 text-center">
+            <button type="button" id="dues-load-more-btn"
+                    class="inline-flex items-center gap-2 px-4 py-2 rounded-lg border border-slate-300
+                           bg-white text-sm font-medium text-slate-700 hover:bg-slate-50">
+              <span class="btn-label">Load more</span>
+            </button>
           </div>
         </div>
       </div>
 
-      <!-- Payments table container -->
-      <div class="bg-white rounded-xl border border-slate-200 overflow-hidden">
+      <!-- TAB 2: TRANSACTION HISTORY -->
+      <div id="tab-content-txns" class="hidden">
+        <div class="bg-white rounded-xl border border-slate-200 overflow-hidden">
+          <div class="hidden md:block">
+            <div class="overflow-x-auto">
+              <table class="w-full" aria-label="Payments list">
+                <thead>
+                  <tr class="border-b border-slate-200 bg-slate-50">
+                    <th class="text-left text-[11px] font-semibold uppercase tracking-wider text-slate-500 px-4 py-3 whitespace-nowrap">TXN Code</th>
+                    <th class="text-left text-[11px] font-semibold uppercase tracking-wider text-slate-500 px-4 py-3">Order</th>
+                    <th class="text-left text-[11px] font-semibold uppercase tracking-wider text-slate-500 px-4 py-3">Customer</th>
+                    <th class="text-right text-[11px] font-semibold uppercase tracking-wider text-slate-500 px-4 py-3">Amount</th>
+                    <th class="text-center text-[11px] font-semibold uppercase tracking-wider text-slate-500 px-4 py-3">Method</th>
+                    <th class="text-left text-[11px] font-semibold uppercase tracking-wider text-slate-500 px-4 py-3">Date</th>
+                    <th class="text-right text-[11px] font-semibold uppercase tracking-wider text-slate-500 px-4 py-3">Actions</th>
+                  </tr>
+                </thead>
+                <tbody id="payments-tbody" class="divide-y divide-slate-100"></tbody>
+              </table>
+            </div>
+          </div>
 
-        <!-- Desktop table -->
-        <div class="hidden md:block">
-          <div class="overflow-x-auto">
-            <table class="w-full" aria-label="Payments list">
-              <thead>
-                <tr class="border-b border-slate-200 bg-slate-50">
-                  <th class="text-left text-[11px] font-semibold uppercase tracking-wider text-slate-500 px-4 py-3 whitespace-nowrap">TXN Code</th>
-                  <th class="text-left text-[11px] font-semibold uppercase tracking-wider text-slate-500 px-4 py-3">Order</th>
-                  <th class="text-left text-[11px] font-semibold uppercase tracking-wider text-slate-500 px-4 py-3">Customer</th>
-                  <th class="text-right text-[11px] font-semibold uppercase tracking-wider text-slate-500 px-4 py-3">Amount</th>
-                  <th class="text-center text-[11px] font-semibold uppercase tracking-wider text-slate-500 px-4 py-3">Method</th>
-                  <th class="text-left text-[11px] font-semibold uppercase tracking-wider text-slate-500 px-4 py-3">Date</th>
-                  <th class="text-right text-[11px] font-semibold uppercase tracking-wider text-slate-500 px-4 py-3">Actions</th>
-                </tr>
-              </thead>
-              <tbody id="payments-tbody" class="divide-y divide-slate-100"></tbody>
-            </table>
+          <div id="payments-cards" class="md:hidden divide-y divide-slate-100"></div>
+
+          <div id="payments-empty" class="hidden p-8 sm:p-12 text-center">
+            <div class="inline-flex items-center justify-center w-12 h-12 rounded-full bg-slate-100 text-slate-400 mb-3">
+              <svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
+              </svg>
+            </div>
+            <p class="text-sm font-medium text-slate-700" id="empty-title">No payments yet</p>
+            <p class="text-xs text-slate-500 mt-0.5" id="empty-desc">Payments will appear here when orders are created.</p>
+          </div>
+
+          <div id="load-more-wrap" class="hidden px-4 py-3 border-t border-slate-100 text-center">
+            <button type="button" id="load-more-btn"
+                    class="inline-flex items-center gap-2 px-4 py-2 rounded-lg border border-slate-300
+                           bg-white text-sm font-medium text-slate-700 hover:bg-slate-50
+                           disabled:opacity-60 disabled:cursor-not-allowed">
+              <span class="btn-label">Load more</span>
+            </button>
           </div>
         </div>
 
-        <!-- Mobile cards -->
-        <div id="payments-cards" class="md:hidden divide-y divide-slate-100"></div>
-
-        <!-- Empty -->
-        <div id="payments-empty" class="hidden p-8 sm:p-12 text-center">
-          <div class="inline-flex items-center justify-center w-12 h-12 rounded-full bg-slate-100 text-slate-400 mb-3">
-            <svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-              <path stroke-linecap="round" stroke-linejoin="round" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
-            </svg>
-          </div>
-          <p class="text-sm font-medium text-slate-700" id="empty-title">No payments yet</p>
-          <p class="text-xs text-slate-500 mt-0.5" id="empty-desc">Payments will appear here when orders are created.</p>
-        </div>
-
-        <!-- Load more -->
-        <div id="load-more-wrap" class="hidden px-4 py-3 border-t border-slate-100 text-center">
-          <button type="button" id="load-more-btn"
-                  class="inline-flex items-center gap-2 px-4 py-2 rounded-lg border border-slate-300
-                         bg-white text-sm font-medium text-slate-700 hover:bg-slate-50
-                         disabled:opacity-60 disabled:cursor-not-allowed">
-            <span class="btn-label">Load more</span>
-          </button>
+        <div class="mt-4 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-slate-500">
+          <span>Showing <span id="shown-count" class="font-medium text-slate-700">0</span> payments</span>
+          <span class="w-1 h-1 rounded-full bg-slate-300"></span>
+          <span>Total loaded: <span id="total-count" class="font-medium text-slate-700">0</span></span>
+          <span class="w-1 h-1 rounded-full bg-slate-300"></span>
+          <span>Sum: <span id="shown-sum" class="font-medium text-green-600">৳0.00</span></span>
         </div>
       </div>
 
-      <!-- Footer stats -->
-      <div class="mt-4 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-slate-500">
-        <span>Showing <span id="shown-count" class="font-medium text-slate-700">0</span> payments</span>
-        <span class="w-1 h-1 rounded-full bg-slate-300"></span>
-        <span>Total loaded: <span id="total-count" class="font-medium text-slate-700">0</span></span>
-        <span class="w-1 h-1 rounded-full bg-slate-300"></span>
-        <span>Sum: <span id="shown-sum" class="font-medium text-green-600">৳0.00</span></span>
+      <!-- TAB 3: CUSTOMER LEDGER -->
+      <div id="tab-content-ledger" class="hidden">
+        <div class="bg-white rounded-xl border border-slate-200 p-4 mb-4">
+          <label for="ledger-customer-select" class="block text-sm font-medium text-slate-700 mb-1.5">
+            Select customer to view their ledger
+          </label>
+          <select id="ledger-customer-select"
+                  class="w-full px-3 py-2.5 rounded-lg border border-slate-300 text-sm bg-white
+                         focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-brand-500">
+            <option value="">— Choose a customer —</option>
+          </select>
+          <p class="text-xs text-slate-500 mt-1.5">
+            Customer এর সব orders, payments, dues table format এ দেখুন।
+          </p>
+        </div>
+
+        <div id="ledger-content" class="hidden"></div>
       </div>
     </main>
 
@@ -381,14 +477,170 @@
   </div>
 
   <!-- ══════════════════════════════════════════════════════
-       TRANSACTION DETAIL MODAL
+       PAY MODAL
        ══════════════════════════════════════════════════════ -->
-  <div id="txn-modal" class="modal-backdrop" role="dialog" aria-modal="true"
-       aria-labelledby="txn-modal-title" aria-hidden="true">
+  <div id="pay-modal" class="modal-backdrop" role="dialog" aria-modal="true"
+       aria-labelledby="pay-modal-title" aria-hidden="true">
     <div class="modal-panel" role="document">
 
       <div class="modal-grab"></div>
 
+      <div class="flex items-start justify-between gap-3 px-5 sm:px-6 pt-4 sm:pt-5 pb-3 border-b border-slate-100">
+        <div class="flex items-center gap-3 min-w-0">
+          <span class="inline-flex items-center justify-center w-10 h-10 rounded-xl bg-green-50 text-green-600 shrink-0">
+            <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+          </span>
+          <div class="min-w-0">
+            <h2 id="pay-modal-title" class="text-base sm:text-lg font-semibold text-slate-900">Collect Payment</h2>
+            <p id="pay-modal-sub" class="text-xs text-slate-500 mt-0.5">—</p>
+          </div>
+        </div>
+        <button type="button" id="pay-modal-close"
+                class="shrink-0 inline-flex items-center justify-center w-9 h-9 rounded-lg
+                       text-slate-400 hover:bg-slate-100 hover:text-slate-600"
+                aria-label="Close">
+          <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+          </svg>
+        </button>
+      </div>
+
+      <div class="px-5 sm:px-6 py-4 overflow-y-auto flex-1">
+
+        <div class="mb-4 p-3 rounded-lg bg-slate-50 border border-slate-100">
+          <p class="text-[11px] font-semibold uppercase tracking-wide text-slate-500 mb-1.5">Customer</p>
+          <p class="text-sm font-semibold text-slate-900" id="pay-customer-name">—</p>
+          <p class="text-xs text-slate-600" id="pay-customer-phone">—</p>
+        </div>
+
+        <div class="p-4 rounded-lg bg-slate-50 border border-slate-100 space-y-2 mb-4">
+          <div class="flex items-center justify-between text-sm">
+            <span class="text-slate-600">Order Total</span>
+            <span class="font-medium text-slate-900" id="pay-order-total">৳0.00</span>
+          </div>
+
+          <div class="flex items-center justify-between text-sm gap-2">
+            <label for="pay-discount-input" class="text-slate-600 shrink-0">Discount (৳)</label>
+            <input type="number" id="pay-discount-input" min="0" step="0.01" value="0"
+                   class="w-28 px-2 py-1 rounded-lg border border-slate-300 text-sm text-right
+                          focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-brand-500" />
+          </div>
+
+          <div class="flex items-center justify-between text-sm">
+            <span class="text-slate-600">Already Paid</span>
+            <span class="font-medium text-green-600" id="pay-order-paid">৳0.00</span>
+          </div>
+          <div class="flex items-center justify-between border-t border-slate-200 pt-2 mt-2">
+            <span class="text-sm font-semibold text-slate-900">Remaining Due</span>
+            <span class="text-lg font-bold text-red-600" id="pay-order-due">৳0.00</span>
+          </div>
+        </div>
+
+        <div class="mb-4">
+          <p class="text-xs font-medium text-slate-600 mb-2">Quick amount</p>
+          <div class="grid grid-cols-3 gap-2">
+            <button type="button" class="quick-pay-btn inline-flex items-center justify-center gap-1 px-3 py-2 rounded-lg
+                           border border-brand-300 bg-brand-50 text-brand-700 text-xs font-semibold
+                           hover:bg-brand-100"
+                    data-amount="full">
+              Full Due
+            </button>
+            <button type="button" class="quick-pay-btn inline-flex items-center justify-center gap-1 px-3 py-2 rounded-lg
+                           border border-slate-300 bg-white text-slate-700 text-xs font-semibold
+                           hover:bg-slate-50"
+                    data-amount="half">
+              Half
+            </button>
+            <button type="button" class="quick-pay-btn inline-flex items-center justify-center gap-1 px-3 py-2 rounded-lg
+                           border border-slate-300 bg-white text-slate-700 text-xs font-semibold
+                           hover:bg-slate-50"
+                    data-amount="custom">
+              Custom
+            </button>
+          </div>
+        </div>
+
+        <div class="mb-3">
+          <label for="pay-amount" class="block text-sm font-medium text-slate-700 mb-1.5">
+            Payment amount (৳) <span class="text-red-500">*</span>
+          </label>
+          <input type="number" id="pay-amount" min="0" step="0.01" value="0"
+                 class="w-full px-3 py-2.5 rounded-lg border border-slate-300 text-lg font-semibold text-right
+                        focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-brand-500" />
+        </div>
+
+        <div class="mb-3">
+          <label for="pay-method" class="block text-sm font-medium text-slate-700 mb-1.5">Payment method</label>
+          <select id="pay-method"
+                  class="w-full px-3 py-2.5 rounded-lg border border-slate-300 text-sm bg-white
+                         focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-brand-500">
+            <option value="Cash">Cash</option>
+            <option value="bKash">bKash</option>
+            <option value="Nagad">Nagad</option>
+            <option value="Bank">Bank</option>
+            <option value="Other">Other</option>
+          </select>
+        </div>
+
+        <div class="mb-3">
+          <label for="pay-reference" class="block text-sm font-medium text-slate-700 mb-1.5">
+            Reference (optional)
+          </label>
+          <input type="text" id="pay-reference" maxlength="80" placeholder="e.g. bKash TrxID"
+                 class="w-full px-3 py-2.5 rounded-lg border border-slate-300 text-sm
+                        focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-brand-500" />
+        </div>
+
+        <div class="mb-3">
+          <label for="pay-note" class="block text-sm font-medium text-slate-700 mb-1.5">Note (optional)</label>
+          <input type="text" id="pay-note" maxlength="120" placeholder="e.g. Partial payment"
+                 class="w-full px-3 py-2.5 rounded-lg border border-slate-300 text-sm
+                        focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-brand-500" />
+        </div>
+
+        <div class="p-4 rounded-lg bg-slate-50 border border-slate-100 space-y-2">
+          <p class="text-[11px] font-semibold uppercase tracking-wide text-slate-500 mb-1">After this payment</p>
+          <div class="flex items-center justify-between text-sm">
+            <span class="text-slate-600">New paid total</span>
+            <span class="font-semibold text-green-600" id="pay-after-paid">৳0.00</span>
+          </div>
+          <div class="flex items-center justify-between text-sm">
+            <span class="text-slate-600">Remaining due</span>
+            <span class="font-semibold" id="pay-after-due">৳0.00</span>
+          </div>
+          <div class="flex items-center justify-between text-sm pt-2 border-t border-slate-200">
+            <span class="text-slate-600">New status</span>
+            <span id="pay-after-status" class="badge badge-unpaid"><span class="badge-dot"></span>Unpaid</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="flex items-center justify-end gap-2 px-5 sm:px-6 py-4 border-t border-slate-100">
+        <button type="button" id="pay-cancel"
+                class="inline-flex items-center justify-center px-4 py-2.5 rounded-lg
+                       text-sm font-medium text-slate-700 hover:bg-slate-100">
+          Cancel
+        </button>
+        <button type="button" id="pay-confirm"
+                class="inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-lg
+                       bg-green-600 hover:bg-green-700 text-white text-sm font-medium
+                       disabled:opacity-60 disabled:cursor-not-allowed">
+          <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" />
+          </svg>
+          <span class="btn-label">Collect Payment</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- TRANSACTION DETAIL MODAL -->
+  <div id="txn-modal" class="modal-backdrop" role="dialog" aria-modal="true"
+       aria-labelledby="txn-modal-title" aria-hidden="true">
+    <div class="modal-panel" role="document">
+      <div class="modal-grab"></div>
       <div class="flex items-start justify-between gap-3 px-5 sm:px-6 pt-4 sm:pt-5 pb-3 border-b border-slate-100">
         <div class="flex items-center gap-3 min-w-0">
           <span class="inline-flex items-center justify-center w-10 h-10 rounded-xl bg-green-50 text-green-600 shrink-0">
@@ -410,11 +662,48 @@
           </svg>
         </button>
       </div>
-
       <div id="txn-modal-body" class="px-5 sm:px-6 py-4 overflow-y-auto"></div>
-
       <div class="flex items-center justify-end gap-2 px-5 sm:px-6 py-4 border-t border-slate-100">
         <button type="button" id="txn-modal-done"
+                class="inline-flex items-center justify-center px-4 py-2.5 rounded-lg
+                       bg-slate-100 text-slate-700 hover:bg-slate-200 text-sm font-medium">
+          Close
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════════════════════
+       ORDER DETAIL MODAL (for ledger view)
+       ══════════════════════════════════════════════════════ -->
+  <div id="order-view-modal" class="modal-backdrop" role="dialog" aria-modal="true"
+       aria-labelledby="order-view-title" aria-hidden="true">
+    <div class="modal-panel modal-panel-wide" role="document">
+      <div class="modal-grab"></div>
+      <div class="flex items-start justify-between gap-3 px-5 sm:px-6 pt-4 sm:pt-5 pb-3 border-b border-slate-100">
+        <div class="flex items-center gap-3 min-w-0">
+          <span class="inline-flex items-center justify-center w-10 h-10 rounded-xl bg-brand-50 text-brand-600 shrink-0">
+            <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+            </svg>
+          </span>
+          <div class="min-w-0">
+            <h2 id="order-view-title" class="text-base sm:text-lg font-semibold text-slate-900">Order Details</h2>
+            <p id="order-view-sub" class="text-xs text-slate-500 mt-0.5">—</p>
+          </div>
+        </div>
+        <button type="button" id="order-view-close"
+                class="shrink-0 inline-flex items-center justify-center w-9 h-9 rounded-lg
+                       text-slate-400 hover:bg-slate-100 hover:text-slate-600"
+                aria-label="Close dialog">
+          <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+          </svg>
+        </button>
+      </div>
+      <div id="order-view-body" class="px-5 sm:px-6 py-4 overflow-y-auto flex-1"></div>
+      <div class="flex items-center justify-end gap-2 px-5 sm:px-6 py-4 border-t border-slate-100">
+        <button type="button" id="order-view-done"
                 class="inline-flex items-center justify-center px-4 py-2.5 rounded-lg
                        bg-slate-100 text-slate-700 hover:bg-slate-200 text-sm font-medium">
           Close
@@ -434,6 +723,8 @@
     import { toast } from "../assets/js/utils/toast.js";
     import {
       queryCollectionCached,
+      createDocument,
+      updateDocument,
       cacheClear,
     } from "../assets/js/firebase/firestore.js";
     import {
@@ -492,16 +783,40 @@
     /* ─── STATE ───────────────────────────────────────── */
     const PAGE_SIZE = 30;
     const state = {
-      items: [],
-      lastDoc: null,
-      hasMore: false,
+      tab: "dues",
+      items: [], lastDoc: null, hasMore: false,
+      dueOrders: [], dueLastDoc: null, dueHasMore: false,
+      customers: [],
       loading: false,
       search: "",
       methodFilter: "",
       dateFilter: "all",
+      payingOrder: null,
+      _payTotal: 0, _payPaid: 0, _payDue: 0, _payDiscount: 0, _payDelivery: 0, _paySubtotal: 0,
+      // Ledger current data
+      ledgerCustomer: null,
+      ledgerOrders: [],
+      ledgerTxns: [],
     };
 
     /* ─── DOM REFS ────────────────────────────────────── */
+    const tabDuesBtn = document.getElementById("tab-dues");
+    const tabTxnsBtn = document.getElementById("tab-txns");
+    const tabLedgerBtn = document.getElementById("tab-ledger");
+    const tabDuesCount = document.getElementById("tab-dues-count");
+    const tabTxnsCount = document.getElementById("tab-txns-count");
+    const tabContentDues = document.getElementById("tab-content-dues");
+    const tabContentTxns = document.getElementById("tab-content-txns");
+    const tabContentLedger = document.getElementById("tab-content-ledger");
+    const ledgerCustomerSelect = document.getElementById("ledger-customer-select");
+    const ledgerContent = document.getElementById("ledger-content");
+
+    const duesTbody = document.getElementById("dues-tbody");
+    const duesCards = document.getElementById("dues-cards");
+    const duesEmpty = document.getElementById("dues-empty");
+    const duesLoadWrap = document.getElementById("dues-load-more-wrap");
+    const duesLoadBtn = document.getElementById("dues-load-more-btn");
+
     const tbody = document.getElementById("payments-tbody");
     const cardsWrap = document.getElementById("payments-cards");
     const emptyEl = document.getElementById("payments-empty");
@@ -509,75 +824,283 @@
     const emptyDesc = document.getElementById("empty-desc");
     const loadMoreWrap = document.getElementById("load-more-wrap");
     const loadMoreBtn = document.getElementById("load-more-btn");
-    const searchInput = document.getElementById("search-input");
-    const methodFilter = document.getElementById("method-filter");
-    const dateFilter = document.getElementById("date-filter");
     const shownCount = document.getElementById("shown-count");
     const totalCountEl = document.getElementById("total-count");
     const shownSumEl = document.getElementById("shown-sum");
+
+    const searchInput = document.getElementById("search-input");
+    const methodFilter = document.getElementById("method-filter");
+    const dateFilter = document.getElementById("date-filter");
     const countLabel = document.getElementById("payments-count-label");
     const refreshBtn = document.getElementById("refresh-btn");
 
     /* ════════════════════════════════════════════════════
-       DATE HELPERS
+       HELPERS
        ════════════════════════════════════════════════════ */
+    function statusBadge(status) {
+      const map = {
+        "Pending": "badge-pending", "Confirmed": "badge-confirmed",
+        "Processing": "badge-processing", "Ready to Ship": "badge-ready",
+        "Assigned": "badge-assigned", "Out for Delivery": "badge-out",
+        "Delivered": "badge-delivered", "Cancelled": "badge-cancelled",
+        "Returned": "badge-returned", "Failed Delivery": "badge-failed",
+      };
+      const cls = map[status] || "badge-returned";
+      return `<span class="badge ${cls}"><span class="badge-dot"></span>${escapeHtml(status || "—")}</span>`;
+    }
+    function paymentBadge(status) {
+      const map = { "Unpaid": "badge-unpaid", "Partial": "badge-partial", "Paid": "badge-paid" };
+      const cls = map[status] || "badge-unpaid";
+      return `<span class="badge ${cls}"><span class="badge-dot"></span>${escapeHtml(status || "Unpaid")}</span>`;
+    }
+    function methodBadge(method) {
+      const map = {
+        "Cash": "badge-delivered", "bKash": "badge-processing",
+        "Nagad": "badge-confirmed", "Bank": "badge-assigned", "Other": "badge-returned",
+      };
+      const cls = map[method] || "badge-returned";
+      return `<span class="badge ${cls}"><span class="badge-dot"></span>${escapeHtml(method || "—")}</span>`;
+    }
     function getDateRange(key) {
       const now = new Date();
       const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0);
-
-      if (key === "today") return { start: startOfToday, end: null };
+      if (key === "today") return { start: startOfToday };
       if (key === "week") {
-        const dayOfWeek = now.getDay(); // 0 = Sunday
-        const start = new Date(startOfToday);
-        start.setDate(start.getDate() - dayOfWeek);
-        return { start, end: null };
+        const s = new Date(startOfToday);
+        s.setDate(s.getDate() - now.getDay());
+        return { start: s };
       }
-      if (key === "month") {
-        const start = new Date(now.getFullYear(), now.getMonth(), 1, 0, 0, 0);
-        return { start, end: null };
-      }
-      return { start: null, end: null };
+      if (key === "month") return { start: new Date(now.getFullYear(), now.getMonth(), 1) };
+      if (key === "year") return { start: new Date(now.getFullYear(), 0, 1) };
+      return { start: null };
     }
 
     /* ════════════════════════════════════════════════════
-       LOAD PAYMENTS
+       TAB SWITCHING
+       ════════════════════════════════════════════════════ */
+    function switchTab(tab) {
+      state.tab = tab;
+      state.search = "";
+      searchInput.value = "";
+
+      [tabDuesBtn, tabTxnsBtn, tabLedgerBtn].forEach((b) => b.classList.remove("active"));
+      [tabContentDues, tabContentTxns, tabContentLedger].forEach((c) => c.classList.add("hidden"));
+
+      if (tab === "dues") {
+        tabDuesBtn.classList.add("active");
+        tabContentDues.classList.remove("hidden");
+        loadDueOrders({ reset: true });
+      } else if (tab === "txns") {
+        tabTxnsBtn.classList.add("active");
+        tabContentTxns.classList.remove("hidden");
+        loadPayments({ reset: true });
+      } else {
+        tabLedgerBtn.classList.add("active");
+        tabContentLedger.classList.remove("hidden");
+        loadCustomerOptions();
+      }
+    }
+
+    tabDuesBtn.addEventListener("click", () => switchTab("dues"));
+    tabTxnsBtn.addEventListener("click", () => switchTab("txns"));
+    tabLedgerBtn.addEventListener("click", () => switchTab("ledger"));
+
+    /* ════════════════════════════════════════════════════
+       LOAD DUE ORDERS
+       ════════════════════════════════════════════════════ */
+    async function loadDueOrders({ reset = false } = {}) {
+      if (state.loading) return;
+      state.loading = true;
+      refreshBtn.disabled = true;
+
+      if (reset) { state.dueOrders = []; state.dueLastDoc = null; }
+
+      let result;
+      try {
+        result = await queryCollectionCached("orders", {
+          order: [["createdAt", "desc"]],
+          limitCount: 100,
+          cursor: reset ? null : state.dueLastDoc,
+          cacheTtlMs: 20000,
+        });
+      } catch (err) {
+        console.error("Load due orders failed:", err);
+        toast.error("Could not load pending dues.");
+        state.loading = false;
+        refreshBtn.disabled = false;
+        return;
+      }
+
+      const fresh = result.items.filter((o) => {
+        const due = Number(o.payment?.due) || 0;
+        if (due <= 0) return false;
+        if (["Cancelled", "Returned"].includes(o.status)) return false;
+        return !state.dueOrders.find((x) => x.id === o.id);
+      });
+
+      state.dueOrders = state.dueOrders.concat(fresh);
+      state.dueLastDoc = result.lastDoc;
+      state.dueHasMore = result.hasMore;
+      state.loading = false;
+      refreshBtn.disabled = false;
+
+      renderDues();
+      updateTabCounts();
+    }
+
+    function renderDues() {
+      const filtered = applyDueFilters(state.dueOrders);
+      tabDuesCount.textContent = state.dueOrders.length;
+
+      if (filtered.length === 0) {
+        duesTbody.innerHTML = "";
+        duesCards.innerHTML = "";
+        duesEmpty.classList.remove("hidden");
+        duesLoadWrap.classList.add("hidden");
+        countLabel.textContent = state.dueOrders.length === 0
+          ? "All payments cleared"
+          : `${filtered.length} of ${state.dueOrders.length} shown`;
+        return;
+      }
+
+      duesEmpty.classList.add("hidden");
+      duesTbody.innerHTML = filtered.map(renderDueRow).join("");
+      duesCards.innerHTML = filtered.map(renderDueCard).join("");
+      duesLoadWrap.classList.toggle("hidden", !state.dueHasMore);
+      countLabel.textContent = `${state.dueOrders.length} order${state.dueOrders.length > 1 ? "s" : ""} with due`;
+    }
+
+    function applyDueFilters(items) {
+      let list = items;
+      if (state.search) {
+        const q = state.search.toLowerCase().trim();
+        list = list.filter((o) => {
+          const hay = [o.orderCode, o.shopCode, o.shopName, o.customer?.name, o.customer?.phone]
+            .filter(Boolean).join(" ").toLowerCase();
+          return hay.includes(q);
+        });
+      }
+      const { start } = getDateRange(state.dateFilter);
+      if (start) list = list.filter((o) => o.createdAt?.toDate && o.createdAt.toDate() >= start);
+      return list;
+    }
+
+    function renderDueRow(o) {
+      const orderCode = escapeHtml(o.orderCode || o.id.slice(0, 8));
+      const shopCode = escapeHtml(o.shopCode || "");
+      const custName = escapeHtml(o.customer?.name || o.shopName || "—");
+      const custPhone = escapeHtml(o.customer?.phone || "");
+      const total = formatCurrency(o.grandTotal || 0);
+      const paid = formatCurrency(o.payment?.paid || 0);
+      const due = Number(o.payment?.due) || 0;
+      const dueStr = formatCurrency(due);
+
+      return `
+        <tr class="hover:bg-slate-50" data-id="${o.id}">
+          <td class="px-4 py-3">
+            <span class="inline-flex items-center px-2 py-0.5 rounded-md bg-brand-50 text-brand-700 text-[11px] font-semibold whitespace-nowrap">
+              ${orderCode}
+            </span>
+            ${shopCode ? `<p class="text-xs text-slate-500 mt-0.5">${shopCode}</p>` : ""}
+          </td>
+          <td class="px-4 py-3">
+            <p class="text-sm font-medium text-slate-900 truncate max-w-[200px]">${custName}</p>
+            ${custPhone ? `<p class="text-xs text-slate-500 mt-0.5">${custPhone}</p>` : ""}
+          </td>
+          <td class="px-4 py-3 text-right">
+            <span class="text-sm font-semibold text-slate-900 whitespace-nowrap">${total}</span>
+          </td>
+          <td class="px-4 py-3 text-right">
+            <span class="text-sm font-medium text-green-600 whitespace-nowrap">${paid}</span>
+          </td>
+          <td class="px-4 py-3 text-right">
+            <span class="text-sm font-bold text-red-600 whitespace-nowrap">${dueStr}</span>
+          </td>
+          <td class="px-4 py-3 text-center">${paymentBadge(o.payment?.status || "Unpaid")}</td>
+          <td class="px-4 py-3">
+            <div class="flex items-center justify-end gap-1">
+              <button type="button" class="pay-btn inline-flex items-center justify-center gap-1 px-2.5 py-1.5 rounded-md text-xs font-medium
+                           text-white bg-green-600 hover:bg-green-700"
+                      data-id="${o.id}">
+                <svg xmlns="http://www.w3.org/2000/svg" class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                Pay
+              </button>
+            </div>
+          </td>
+        </tr>
+      `;
+    }
+
+    function renderDueCard(o) {
+      const orderCode = escapeHtml(o.orderCode || o.id.slice(0, 8));
+      const shopCode = escapeHtml(o.shopCode || "");
+      const custName = escapeHtml(o.customer?.name || o.shopName || "—");
+      const custPhone = escapeHtml(o.customer?.phone || "");
+      const total = formatCurrency(o.grandTotal || 0);
+      const paid = formatCurrency(o.payment?.paid || 0);
+      const due = Number(o.payment?.due) || 0;
+
+      return `
+        <div class="p-4" data-id="${o.id}">
+          <div class="flex items-start justify-between gap-3 mb-3">
+            <div class="min-w-0">
+              <span class="inline-flex items-center px-2 py-0.5 rounded-md bg-brand-50 text-brand-700 text-[10px] font-semibold">${orderCode}</span>
+              ${shopCode ? `<span class="text-xs text-slate-500 ml-1">${shopCode}</span>` : ""}
+              <p class="text-sm font-semibold text-slate-900 mt-1.5 truncate">${custName}</p>
+              ${custPhone ? `<p class="text-xs text-slate-500 mt-0.5">${custPhone}</p>` : ""}
+            </div>
+            ${paymentBadge(o.payment?.status || "Unpaid")}
+          </div>
+          <div class="grid grid-cols-3 gap-2 text-xs mb-3">
+            <div class="p-2 rounded-lg bg-slate-50">
+              <p class="text-[10px] uppercase font-semibold text-slate-500">Total</p>
+              <p class="text-sm font-bold text-slate-900 mt-0.5">${total}</p>
+            </div>
+            <div class="p-2 rounded-lg bg-slate-50">
+              <p class="text-[10px] uppercase font-semibold text-slate-500">Paid</p>
+              <p class="text-sm font-bold text-green-600 mt-0.5">${paid}</p>
+            </div>
+            <div class="p-2 rounded-lg bg-red-50">
+              <p class="text-[10px] uppercase font-semibold text-red-600">Due</p>
+              <p class="text-sm font-bold text-red-600 mt-0.5">${formatCurrency(due)}</p>
+            </div>
+          </div>
+          <button type="button" class="pay-btn w-full inline-flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg
+                       bg-green-600 hover:bg-green-700 text-white text-xs font-medium" data-id="${o.id}">
+            Collect Payment
+          </button>
+        </div>
+      `;
+    }
+
+    /* ════════════════════════════════════════════════════
+       LOAD PAYMENTS (TRANSACTIONS)
        ════════════════════════════════════════════════════ */
     async function loadPayments({ reset = false } = {}) {
       if (state.loading) return;
       state.loading = true;
       refreshBtn.disabled = true;
 
-      if (reset) {
-        state.items = [];
-        state.lastDoc = null;
-      }
+      if (reset) { state.items = []; state.lastDoc = null; }
 
-      // Build filters
       const filters = [];
       if (state.methodFilter) filters.push(["method", "==", state.methodFilter]);
-
       const { start } = getDateRange(state.dateFilter);
       if (start) filters.push(["createdAt", ">=", start]);
 
       let result;
       try {
         result = await queryCollectionCached("transactions", {
-          filters,
-          order: [["createdAt", "desc"]],
+          filters, order: [["createdAt", "desc"]],
           limitCount: PAGE_SIZE,
           cursor: reset ? null : state.lastDoc,
           cacheTtlMs: 30000,
         });
       } catch (err) {
         console.error("Load payments failed:", err);
-
-        // Fallback: simple query if composite index missing
-        if (err.code === "failed-precondition" || err.message?.includes("index")) {
-          toast.error("Firestore index missing. Check console for link.");
-        } else {
-          toast.error("Could not load payments.");
-        }
-
+        toast.error("Could not load payments.");
         state.loading = false;
         refreshBtn.disabled = false;
         return;
@@ -594,42 +1117,26 @@
 
       render();
       computeSummary();
+      updateTabCounts();
     }
 
-    /* ════════════════════════════════════════════════════
-       RENDER
-       ════════════════════════════════════════════════════ */
     function render() {
       const filtered = applyClientFilters(state.items);
-
       shownCount.textContent = filtered.length;
       totalCountEl.textContent = state.items.length;
 
-      // Sum of shown
       const sum = filtered.reduce((s, t) => s + (Number(t.amount) || 0), 0);
       shownSumEl.textContent = formatCurrency(sum);
 
-      if (state.search || state.methodFilter || state.dateFilter !== "all") {
-        countLabel.textContent = `${filtered.length} of ${state.items.length} shown`;
-      } else {
-        countLabel.textContent = state.items.length === 0
-          ? "No payments yet"
-          : `${state.items.length} payment${state.items.length > 1 ? "s" : ""} loaded`;
-      }
+      countLabel.textContent = (state.search || state.methodFilter || state.dateFilter !== "all")
+        ? `${filtered.length} of ${state.items.length} shown`
+        : `${state.items.length} payments loaded`;
 
       if (filtered.length === 0) {
         tbody.innerHTML = "";
         cardsWrap.innerHTML = "";
         emptyEl.classList.remove("hidden");
         loadMoreWrap.classList.add("hidden");
-
-        if (state.search || state.methodFilter || state.dateFilter !== "all") {
-          emptyTitle.textContent = "No matching payments";
-          emptyDesc.textContent = "Try adjusting filters or search term.";
-        } else {
-          emptyTitle.textContent = "No payments yet";
-          emptyDesc.textContent = "Payments will appear here when orders are created.";
-        }
         return;
       }
 
@@ -639,33 +1146,16 @@
       loadMoreWrap.classList.toggle("hidden", !state.hasMore);
     }
 
-    /* ─── CLIENT FILTER ───────────────────────────────── */
     function applyClientFilters(items) {
       if (!state.search) return items;
       const q = state.search.toLowerCase().trim();
       return items.filter((t) => {
-        const hay = [
-          t.code, t.orderCode, t.shopCode, t.shopName,
-          t.customerName, t.note, t.method, t.reference,
-        ].filter(Boolean).join(" ").toLowerCase();
+        const hay = [t.code, t.orderCode, t.shopCode, t.shopName, t.customerName, t.note, t.method, t.reference]
+          .filter(Boolean).join(" ").toLowerCase();
         return hay.includes(q);
       });
     }
 
-    /* ─── AMOUNT BADGE / METHOD ───────────────────────── */
-    function methodBadge(method) {
-      const map = {
-        "Cash":  "badge-delivered",
-        "bKash": "badge-processing",
-        "Nagad": "badge-confirmed",
-        "Bank":  "badge-assigned",
-        "Other": "badge-returned",
-      };
-      const cls = map[method] || "badge-returned";
-      return `<span class="badge ${cls}"><span class="badge-dot"></span>${escapeHtml(method || "—")}</span>`;
-    }
-
-    /* ─── DESKTOP ROW ─────────────────────────────────── */
     function renderRow(t) {
       const code = escapeHtml(t.code || t.id.slice(0, 8));
       const orderCode = escapeHtml(t.orderCode || "—");
@@ -677,9 +1167,7 @@
       return `
         <tr class="hover:bg-slate-50" data-id="${t.id}">
           <td class="px-4 py-3">
-            <span class="inline-flex items-center px-2 py-0.5 rounded-md bg-green-50 text-green-700 text-[11px] font-semibold whitespace-nowrap">
-              ${code}
-            </span>
+            <span class="inline-flex items-center px-2 py-0.5 rounded-md bg-green-50 text-green-700 text-[11px] font-semibold whitespace-nowrap">${code}</span>
           </td>
           <td class="px-4 py-3">
             <p class="text-sm font-medium text-slate-900">${orderCode}</p>
@@ -695,7 +1183,7 @@
           <td class="px-4 py-3 text-xs text-slate-500 whitespace-nowrap">${date}</td>
           <td class="px-4 py-3 text-right">
             <button type="button" class="txn-view-btn inline-flex items-center justify-center w-8 h-8 rounded-md text-slate-600 hover:bg-slate-100"
-                    data-id="${t.id}" title="View details" aria-label="View details">
+                    data-id="${t.id}" title="View details">
               <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                 <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
                 <path stroke-linecap="round" stroke-linejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
@@ -706,7 +1194,6 @@
       `;
     }
 
-    /* ─── MOBILE CARD ─────────────────────────────────── */
     function renderCard(t) {
       const code = escapeHtml(t.code || t.id.slice(0, 8));
       const orderCode = escapeHtml(t.orderCode || "—");
@@ -736,32 +1223,22 @@
             </div>
           </div>
           <button type="button" class="txn-view-btn mt-3 w-full inline-flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg
-                          border border-slate-300 text-slate-700 hover:bg-slate-50 text-xs font-medium"
-                  data-id="${t.id}">
-            <svg xmlns="http://www.w3.org/2000/svg" class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-              <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-              <path stroke-linecap="round" stroke-linejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-            </svg>
+                          border border-slate-300 text-slate-700 hover:bg-slate-50 text-xs font-medium" data-id="${t.id}">
             View details
           </button>
         </div>
       `;
     }
 
-    /* ════════════════════════════════════════════════════
-       COMPUTE SUMMARY
-       ════════════════════════════════════════════════════ */
     function computeSummary() {
       const now = new Date();
       const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate());
       const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
 
       let total = 0, today = 0, month = 0;
-
       state.items.forEach((t) => {
         const amt = Number(t.amount) || 0;
         total += amt;
-
         if (t.createdAt?.toDate) {
           const d = t.createdAt.toDate();
           if (d >= startOfToday) today += amt;
@@ -769,9 +1246,507 @@
         }
       });
 
+      const totalDue = state.dueOrders.reduce((s, o) => s + (Number(o.payment?.due) || 0), 0);
+
       document.getElementById("sum-total-received").textContent = formatCurrency(total);
       document.getElementById("sum-today").textContent = formatCurrency(today);
       document.getElementById("sum-month").textContent = formatCurrency(month);
+      document.getElementById("sum-due").textContent = formatCurrency(totalDue);
+    }
+
+    function updateTabCounts() {
+      tabDuesCount.textContent = state.dueOrders.length;
+      tabTxnsCount.textContent = state.items.length;
+    }
+
+    /* ════════════════════════════════════════════════════
+       PAY MODAL
+       ════════════════════════════════════════════════════ */
+    const payModal = document.getElementById("pay-modal");
+    const payModalSub = document.getElementById("pay-modal-sub");
+    const payCustomerName = document.getElementById("pay-customer-name");
+    const payCustomerPhone = document.getElementById("pay-customer-phone");
+    const payOrderTotal = document.getElementById("pay-order-total");
+    const payDiscountInput = document.getElementById("pay-discount-input");
+    const payOrderPaid = document.getElementById("pay-order-paid");
+    const payOrderDue = document.getElementById("pay-order-due");
+    const payAmountInput = document.getElementById("pay-amount");
+    const payMethodSel = document.getElementById("pay-method");
+    const payReferenceInput = document.getElementById("pay-reference");
+    const payNoteInput = document.getElementById("pay-note");
+    const payAfterPaidEl = document.getElementById("pay-after-paid");
+    const payAfterDueEl = document.getElementById("pay-after-due");
+    const payAfterStatusEl = document.getElementById("pay-after-status");
+    const payConfirmBtn = document.getElementById("pay-confirm");
+    const payCancelBtn = document.getElementById("pay-cancel");
+    const payCloseBtn = document.getElementById("pay-modal-close");
+
+    function openPayModal(orderId) {
+      const order = state.dueOrders.find((o) => o.id === orderId);
+      if (!order) return;
+
+      state.payingOrder = order;
+      state._paySubtotal = Number(order.subtotal) || 0;
+      state._payDelivery = Number(order.deliveryCharge) || 0;
+      state._payDiscount = Number(order.discount) || 0;
+      state._payTotal = Number(order.grandTotal) || 0;
+      state._payPaid = Number(order.payment?.paid) || 0;
+      state._payDue = Math.max(0, state._payTotal - state._payPaid);
+
+      payModalSub.textContent = order.orderCode || order.id.slice(0, 8);
+      payCustomerName.textContent = order.customer?.name || order.shopName || "—";
+      payCustomerPhone.textContent = order.customer?.phone || "—";
+      payOrderTotal.textContent = formatCurrency(state._payTotal);
+      payOrderPaid.textContent = formatCurrency(state._payPaid);
+      payOrderDue.textContent = formatCurrency(state._payDue);
+      payDiscountInput.value = state._payDiscount;
+      payAmountInput.value = state._payDue;
+      payMethodSel.value = order.payment?.method || "Cash";
+      payReferenceInput.value = "";
+      payNoteInput.value = "";
+
+      payAmountInput.oninput = recalcPay;
+      payDiscountInput.oninput = recalcPay;
+
+      recalcPay();
+
+      payModal.classList.add("is-open");
+      payModal.setAttribute("aria-hidden", "false");
+      document.body.classList.add("no-scroll");
+      setTimeout(() => payAmountInput.focus(), 200);
+    }
+
+    function recalcPay() {
+      const newDiscount = Math.max(0, Number(payDiscountInput.value) || 0);
+      const newAmount = Math.max(0, Number(payAmountInput.value) || 0);
+
+      const newTotal = Math.max(0, state._paySubtotal - newDiscount + state._payDelivery);
+      const newDue = Math.max(0, newTotal - state._payPaid);
+
+      payOrderTotal.textContent = formatCurrency(newTotal);
+      payOrderDue.textContent = formatCurrency(newDue);
+      state._payTotal = newTotal;
+      state._payDue = newDue;
+
+      const appliedAmount = Math.min(newAmount, newDue);
+      const afterPaid = state._payPaid + appliedAmount;
+      const afterDue = Math.max(0, newTotal - afterPaid);
+
+      payAfterPaidEl.textContent = formatCurrency(afterPaid);
+      payAfterDueEl.textContent = formatCurrency(afterDue);
+      payAfterDueEl.className = `font-semibold ${afterDue > 0 ? "text-red-600" : "text-green-600"}`;
+
+      let status = "Unpaid", cls = "badge-unpaid";
+      if (afterPaid >= newTotal && newTotal > 0) { status = "Paid"; cls = "badge-paid"; }
+      else if (afterPaid > 0) { status = "Partial"; cls = "badge-partial"; }
+      payAfterStatusEl.className = `badge ${cls}`;
+      payAfterStatusEl.innerHTML = `<span class="badge-dot"></span>${status}`;
+
+      if (newAmount > newDue) payAmountInput.classList.add("border-red-500", "focus:ring-red-500");
+      else payAmountInput.classList.remove("border-red-500", "focus:ring-red-500");
+    }
+
+    function closePayModal() {
+      payModal.classList.remove("is-open");
+      payModal.setAttribute("aria-hidden", "true");
+      document.body.classList.remove("no-scroll");
+      state.payingOrder = null;
+    }
+
+    payCancelBtn.addEventListener("click", closePayModal);
+    payCloseBtn.addEventListener("click", closePayModal);
+    payModal.addEventListener("click", (e) => { if (e.target === payModal) closePayModal(); });
+
+    document.querySelectorAll(".quick-pay-btn").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        const type = btn.dataset.amount;
+        if (type === "full") payAmountInput.value = state._payDue;
+        else if (type === "half") payAmountInput.value = Math.round(state._payDue / 2);
+        else { payAmountInput.value = 0; payAmountInput.focus(); }
+        recalcPay();
+      });
+    });
+
+    payConfirmBtn.addEventListener("click", async () => {
+      if (!state.payingOrder) return;
+
+      const order = state.payingOrder;
+      const amount = Math.max(0, Number(payAmountInput.value) || 0);
+      const newDiscount = Math.max(0, Number(payDiscountInput.value) || 0);
+      const method = payMethodSel.value;
+      const reference = payReferenceInput.value.trim() || null;
+      const note = payNoteInput.value.trim() || "Payment received";
+
+      if (amount <= 0) { toast.warning("Amount must be > 0."); return; }
+      if (amount > state._payDue) { toast.warning(`Amount exceeds due.`); return; }
+
+      payConfirmBtn.disabled = true;
+      const labelEl = payConfirmBtn.querySelector(".btn-label");
+      const orig = labelEl.textContent;
+      labelEl.textContent = "Collecting…";
+
+      try {
+        const newTotal = state._payTotal;
+        const newPaid = state._payPaid + amount;
+        const newDue = Math.max(0, newTotal - newPaid);
+        const newStatus = newPaid >= newTotal && newTotal > 0 ? "Paid" : newPaid > 0 ? "Partial" : "Unpaid";
+
+        await updateDocument("orders", order.id, {
+          discount: newDiscount,
+          grandTotal: newTotal,
+          "payment.paid": newPaid,
+          "payment.due": newDue,
+          "payment.method": method,
+          "payment.status": newStatus,
+          "payment.lastPaymentAt": new Date(),
+        });
+
+        const txnCode = "TXN-" + Date.now().toString(36).toUpperCase().slice(-6);
+        await createDocument("transactions", {
+          code: txnCode,
+          shopId: order.shopId,
+          shopCode: order.shopCode || null,
+          shopName: order.shopName || null,
+          customerName: order.customer?.name || null,
+          customerPhone: order.customer?.phone || null,
+          orderId: order.id,
+          orderCode: order.orderCode || null,
+          type: "payment",
+          amount, method, reference, note,
+          orderPaidAfter: newPaid,
+          orderDueAfter: newDue,
+          createdBy: currentUser.uid,
+        });
+
+        order.discount = newDiscount;
+        order.grandTotal = newTotal;
+        order.payment = order.payment || {};
+        order.payment.paid = newPaid;
+        order.payment.due = newDue;
+        order.payment.method = method;
+        order.payment.status = newStatus;
+
+        cacheClear("q:orders");
+        cacheClear("q:transactions");
+
+        closePayModal();
+
+        if (newDue <= 0) state.dueOrders = state.dueOrders.filter((o) => o.id !== order.id);
+        renderDues();
+        computeSummary();
+        updateTabCounts();
+
+        toast.success(`Payment collected — ${formatCurrency(amount)}`);
+      } catch (err) {
+        console.error("Payment failed:", err);
+        toast.error("Failed to collect payment.");
+      } finally {
+        payConfirmBtn.disabled = false;
+        labelEl.textContent = orig;
+      }
+    });
+
+    /* ════════════════════════════════════════════════════
+       CUSTOMER LEDGER — TABLE SYSTEM
+       ════════════════════════════════════════════════════ */
+    async function loadCustomerOptions() {
+      if (state.customers.length === 0) {
+        try {
+          const res = await queryCollectionCached("shops", {
+            order: [["name", "asc"]],
+            limitCount: 500,
+            cacheTtlMs: 300000,
+          });
+          state.customers = res.items;
+        } catch (err) {
+          console.error("Load customers failed:", err);
+          toast.error("Could not load customers.");
+          return;
+        }
+      }
+
+      ledgerCustomerSelect.innerHTML = `<option value="">— Choose a customer —</option>` +
+        state.customers.map((c) => {
+          const code = c.code ? `${c.code} — ` : "";
+          const phone = c.ownerPhone ? ` (${c.ownerPhone})` : "";
+          return `<option value="${c.id}">${escapeHtml(code + c.name + phone)}</option>`;
+        }).join("");
+    }
+
+    ledgerCustomerSelect.addEventListener("change", async () => {
+      const customerId = ledgerCustomerSelect.value;
+      if (!customerId) {
+        ledgerContent.classList.add("hidden");
+        ledgerContent.innerHTML = "";
+        return;
+      }
+      const customer = state.customers.find((c) => c.id === customerId);
+      if (!customer) return;
+      await renderCustomerLedger(customer);
+    });
+
+    async function renderCustomerLedger(customer) {
+      ledgerContent.classList.remove("hidden");
+      ledgerContent.innerHTML = `
+        <div class="bg-white rounded-xl border border-slate-200 p-8 text-center">
+          <div class="inline-block w-6 h-6 border-2 border-brand-600 border-t-transparent rounded-full animate-spin"></div>
+          <p class="text-sm text-slate-500 mt-3">Loading ledger…</p>
+        </div>`;
+
+      try {
+        let orders = [], txns = [];
+
+        try {
+          const ordersRes = await queryCollectionCached("orders", {
+            filters: [["shopId", "==", customer.id]],
+            order: [["createdAt", "desc"]],
+            limitCount: 500,
+            cacheTtlMs: 30000,
+            skipCache: true,
+          });
+          orders = ordersRes.items;
+        } catch (err) {
+          console.warn("Orders index fallback:", err.code);
+          const all = await queryCollectionCached("orders", {
+            order: [["createdAt", "desc"]], limitCount: 500, skipCache: true,
+          });
+          orders = all.items.filter((o) => o.shopId === customer.id);
+        }
+
+        try {
+          const txnsRes = await queryCollectionCached("transactions", {
+            filters: [["shopId", "==", customer.id]],
+            order: [["createdAt", "desc"]],
+            limitCount: 500,
+            cacheTtlMs: 30000,
+            skipCache: true,
+          });
+          txns = txnsRes.items;
+        } catch (err) {
+          console.warn("Txns index fallback:", err.code);
+          const all = await queryCollectionCached("transactions", {
+            order: [["createdAt", "desc"]], limitCount: 500, skipCache: true,
+          });
+          txns = all.items.filter((t) => t.shopId === customer.id);
+        }
+
+        state.ledgerCustomer = customer;
+        state.ledgerOrders = orders;
+        state.ledgerTxns = txns;
+
+        renderLedgerTables(customer, orders, txns);
+      } catch (err) {
+        console.error("Ledger load failed:", err);
+        ledgerContent.innerHTML = `
+          <div class="bg-white rounded-xl border border-red-200 p-8 text-center">
+            <p class="text-sm font-medium text-red-600">Failed to load ledger</p>
+            <p class="text-xs text-slate-500 mt-1">${escapeHtml(err.message || "")}</p>
+          </div>`;
+      }
+    }
+
+    function renderLedgerTables(customer, orders, txns) {
+      // Summary
+      const totalOrders = orders.length;
+      const totalSales = orders.reduce((s, o) => s + (Number(o.grandTotal) || 0), 0);
+      const totalPaid = orders.reduce((s, o) => s + (Number(o.payment?.paid) || 0), 0);
+      const totalDue = Math.max(0, totalSales - totalPaid);
+
+      // ─── ORDER ROWS ─────────────────────────────────
+      const orderRows = orders.length === 0
+        ? `<tr><td colspan="9" class="text-center py-8 text-sm text-slate-500">No orders found</td></tr>`
+        : orders.map((o) => {
+          const orderCode = escapeHtml(o.orderCode || o.id.slice(0, 8));
+          const items = o.items || [];
+          const itemsSummary = items.length === 0
+            ? "—"
+            : items.slice(0, 2).map((it) => `${escapeHtml(it.name || "—")} ×${it.quantity || 0}`).join(", ")
+              + (items.length > 2 ? ` +${items.length - 2} more` : "");
+          const totalQty = items.reduce((s, it) => s + (Number(it.quantity) || 0), 0);
+          const total = formatCurrency(o.grandTotal || 0);
+          const paid = formatCurrency(o.payment?.paid || 0);
+          const due = Number(o.payment?.due) || 0;
+          const payStatus = o.payment?.status || "Unpaid";
+          const status = o.status || "Pending";
+          const manName = escapeHtml(o.deliveryManName || "—");
+          const date = o.createdAt ? formatDate(o.createdAt) : "—";
+
+          return `
+            <tr class="hover:bg-slate-50">
+              <td class="px-3 py-3">
+                <span class="inline-flex items-center px-2 py-0.5 rounded-md bg-brand-50 text-brand-700 text-[11px] font-semibold whitespace-nowrap">
+                  ${orderCode}
+                </span>
+              </td>
+              <td class="px-3 py-3 text-xs text-slate-600 whitespace-nowrap">${date}</td>
+              <td class="px-3 py-3">
+                <p class="text-xs text-slate-700 line-clamp-2 max-w-[200px]">${itemsSummary}</p>
+                <p class="text-[10px] text-slate-400 mt-0.5">${items.length} item${items.length !== 1 ? "s" : ""} · Qty ${totalQty}</p>
+              </td>
+              <td class="px-3 py-3 text-right">
+                <span class="text-sm font-semibold text-slate-900 whitespace-nowrap">${total}</span>
+              </td>
+              <td class="px-3 py-3 text-right">
+                <span class="text-sm font-medium text-green-600 whitespace-nowrap">${paid}</span>
+              </td>
+              <td class="px-3 py-3 text-right">
+                <span class="text-sm font-bold whitespace-nowrap ${due > 0 ? "text-red-600" : "text-slate-400"}">${formatCurrency(due)}</span>
+              </td>
+              <td class="px-3 py-3 text-center">${paymentBadge(payStatus)}</td>
+              <td class="px-3 py-3 text-center">${statusBadge(status)}</td>
+              <td class="px-3 py-3">
+                <p class="text-xs text-slate-700 truncate max-w-[120px]">${manName}</p>
+              </td>
+              <td class="px-3 py-3 text-right">
+                <button type="button" class="ledger-order-view-btn inline-flex items-center justify-center w-8 h-8 rounded-md text-slate-600 hover:bg-slate-100"
+                        data-order-id="${o.id}" title="View order">
+                  <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                  </svg>
+                </button>
+              </td>
+            </tr>
+          `;
+        }).join("");
+
+      // ─── TXN ROWS ───────────────────────────────────
+      const txnRows = txns.length === 0
+        ? `<tr><td colspan="6" class="text-center py-8 text-sm text-slate-500">No payments found</td></tr>`
+        : txns.map((t) => {
+          const code = escapeHtml(t.code || t.id.slice(0, 8));
+          const orderCode = escapeHtml(t.orderCode || "—");
+          const amount = formatCurrency(t.amount || 0);
+          const method = t.method || "Cash";
+          const date = t.createdAt ? formatDate(t.createdAt, true) : "—";
+          const reference = escapeHtml(t.reference || "—");
+
+          return `
+            <tr class="hover:bg-slate-50">
+              <td class="px-3 py-3">
+                <span class="inline-flex items-center px-2 py-0.5 rounded-md bg-green-50 text-green-700 text-[11px] font-semibold whitespace-nowrap">
+                  ${code}
+                </span>
+              </td>
+              <td class="px-3 py-3">
+                <span class="inline-flex items-center px-2 py-0.5 rounded-md bg-slate-100 text-slate-700 text-[11px] font-medium">
+                  ${orderCode}
+                </span>
+              </td>
+              <td class="px-3 py-3 text-right">
+                <span class="text-sm font-bold text-green-600 whitespace-nowrap">${amount}</span>
+              </td>
+              <td class="px-3 py-3 text-center">${methodBadge(method)}</td>
+              <td class="px-3 py-3 text-xs text-slate-600 whitespace-nowrap">${date}</td>
+              <td class="px-3 py-3 text-xs text-slate-500 max-w-[140px] truncate">${reference}</td>
+              <td class="px-3 py-3 text-right">
+                <button type="button" class="ledger-txn-view-btn inline-flex items-center justify-center w-8 h-8 rounded-md text-slate-600 hover:bg-slate-100"
+                        data-txn-id="${t.id}" title="View txn">
+                  <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                  </svg>
+                </button>
+              </td>
+            </tr>
+          `;
+        }).join("");
+
+      ledgerContent.innerHTML = `
+        <!-- Customer Info -->
+        <div class="bg-white rounded-xl border border-slate-200 p-5 mb-4">
+          <div class="flex items-start justify-between gap-3 flex-wrap">
+            <div class="min-w-0">
+              <span class="inline-flex items-center px-2 py-0.5 rounded-md bg-brand-50 text-brand-700 text-[11px] font-semibold mb-2">
+                ${escapeHtml(customer.code || "—")}
+              </span>
+              <h3 class="text-lg font-bold text-slate-900">${escapeHtml(customer.name || "—")}</h3>
+              <p class="text-sm text-slate-600 mt-0.5">
+                ${escapeHtml(customer.ownerName || "")}
+                ${customer.ownerPhone ? ` · ${escapeHtml(customer.ownerPhone)}` : ""}
+              </p>
+              ${customer.address ? `<p class="text-xs text-slate-500 mt-1">${escapeHtml(customer.address)}</p>` : ""}
+            </div>
+          </div>
+        </div>
+
+        <!-- Summary Cards -->
+        <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-4">
+          <div class="bg-white rounded-xl border border-slate-200 p-4">
+            <p class="text-xs font-medium text-slate-500 uppercase">Total Orders</p>
+            <p class="text-2xl font-bold text-slate-900 mt-1">${totalOrders}</p>
+          </div>
+          <div class="bg-white rounded-xl border border-slate-200 p-4">
+            <p class="text-xs font-medium text-slate-500 uppercase">Total Sales</p>
+            <p class="text-xl font-bold text-slate-900 mt-1">${formatCurrency(totalSales)}</p>
+          </div>
+          <div class="bg-white rounded-xl border border-slate-200 p-4">
+            <p class="text-xs font-medium text-slate-500 uppercase">Total Paid</p>
+            <p class="text-xl font-bold text-green-600 mt-1">${formatCurrency(totalPaid)}</p>
+          </div>
+          <div class="bg-white rounded-xl border border-slate-200 p-4">
+            <p class="text-xs font-medium text-slate-500 uppercase">Total Due</p>
+            <p class="text-xl font-bold text-red-600 mt-1">${formatCurrency(totalDue)}</p>
+          </div>
+        </div>
+
+        <!-- ═══ ORDERS TABLE ═══ -->
+        <div class="bg-white rounded-xl border border-slate-200 overflow-hidden mb-4">
+          <div class="px-4 py-3 border-b border-slate-200 bg-slate-50 flex items-center justify-between">
+            <div>
+              <h4 class="text-sm font-semibold text-slate-900">All Orders (${orders.length})</h4>
+              <p class="text-xs text-slate-500 mt-0.5">এই customer এর সব orders — paid, due, status সহ</p>
+            </div>
+          </div>
+          <div class="overflow-x-auto">
+            <table class="w-full" aria-label="Customer orders">
+              <thead>
+                <tr class="border-b border-slate-200 bg-slate-50/50">
+                  <th class="text-left text-[10px] font-semibold uppercase tracking-wider text-slate-500 px-3 py-2 whitespace-nowrap">Order</th>
+                  <th class="text-left text-[10px] font-semibold uppercase tracking-wider text-slate-500 px-3 py-2">Date</th>
+                  <th class="text-left text-[10px] font-semibold uppercase tracking-wider text-slate-500 px-3 py-2">Items</th>
+                  <th class="text-right text-[10px] font-semibold uppercase tracking-wider text-slate-500 px-3 py-2">Total</th>
+                  <th class="text-right text-[10px] font-semibold uppercase tracking-wider text-slate-500 px-3 py-2">Paid</th>
+                  <th class="text-right text-[10px] font-semibold uppercase tracking-wider text-slate-500 px-3 py-2">Due</th>
+                  <th class="text-center text-[10px] font-semibold uppercase tracking-wider text-slate-500 px-3 py-2">Payment</th>
+                  <th class="text-center text-[10px] font-semibold uppercase tracking-wider text-slate-500 px-3 py-2">Status</th>
+                  <th class="text-left text-[10px] font-semibold uppercase tracking-wider text-slate-500 px-3 py-2">Delivery Man</th>
+                  <th class="text-right text-[10px] font-semibold uppercase tracking-wider text-slate-500 px-3 py-2">Actions</th>
+                </tr>
+              </thead>
+              <tbody class="divide-y divide-slate-100">
+                ${orderRows}
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- ═══ TRANSACTIONS TABLE ═══ -->
+        <div class="bg-white rounded-xl border border-slate-200 overflow-hidden">
+          <div class="px-4 py-3 border-b border-slate-200 bg-slate-50">
+            <h4 class="text-sm font-semibold text-slate-900">Payment History (${txns.length})</h4>
+            <p class="text-xs text-slate-500 mt-0.5">এই customer এর সব payment transactions</p>
+          </div>
+          <div class="overflow-x-auto">
+            <table class="w-full" aria-label="Customer payments">
+              <thead>
+                <tr class="border-b border-slate-200 bg-slate-50/50">
+                  <th class="text-left text-[10px] font-semibold uppercase tracking-wider text-slate-500 px-3 py-2 whitespace-nowrap">TXN Code</th>
+                  <th class="text-left text-[10px] font-semibold uppercase tracking-wider text-slate-500 px-3 py-2">Order</th>
+                  <th class="text-right text-[10px] font-semibold uppercase tracking-wider text-slate-500 px-3 py-2">Amount</th>
+                  <th class="text-center text-[10px] font-semibold uppercase tracking-wider text-slate-500 px-3 py-2">Method</th>
+                  <th class="text-left text-[10px] font-semibold uppercase tracking-wider text-slate-500 px-3 py-2">Date</th>
+                  <th class="text-left text-[10px] font-semibold uppercase tracking-wider text-slate-500 px-3 py-2">Reference</th>
+                  <th class="text-right text-[10px] font-semibold uppercase tracking-wider text-slate-500 px-3 py-2">Actions</th>
+                </tr>
+              </thead>
+              <tbody class="divide-y divide-slate-100">
+                ${txnRows}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      `;
     }
 
     /* ════════════════════════════════════════════════════
@@ -783,16 +1758,12 @@
 
     function openTxnModal(txn) {
       txnModalSub.textContent = txn.code || txn.id.slice(0, 8);
-
       txnModalBody.innerHTML = `
-        <!-- Amount hero -->
         <div class="text-center py-4 mb-4 rounded-xl bg-green-50 border border-green-100">
           <p class="text-xs font-medium text-green-700 uppercase tracking-wide">Payment Amount</p>
           <p class="text-3xl font-bold text-green-700 mt-1">${formatCurrency(txn.amount || 0)}</p>
           <p class="text-xs text-green-600 mt-1">via ${escapeHtml(txn.method || "Cash")}</p>
         </div>
-
-        <!-- Details grid -->
         <div class="grid grid-cols-2 gap-3 mb-4">
           <div class="p-3 rounded-lg bg-slate-50">
             <p class="text-[10px] uppercase font-semibold text-slate-500">TXN Code</p>
@@ -811,17 +1782,6 @@
             <p class="text-sm font-semibold text-slate-900 mt-0.5">${txn.createdAt ? formatDate(txn.createdAt, true) : "—"}</p>
           </div>
         </div>
-
-        <!-- Customer info -->
-        ${txn.customerName || txn.shopName ? `
-          <div class="mb-4">
-            <p class="text-[11px] font-semibold uppercase tracking-wide text-slate-500 mb-1.5">Customer</p>
-            <p class="text-sm font-medium text-slate-900">${escapeHtml(txn.customerName || txn.shopName)}</p>
-            ${txn.shopCode ? `<p class="text-xs text-slate-500 mt-0.5">${escapeHtml(txn.shopCode)}</p>` : ""}
-          </div>
-        ` : ""}
-
-        <!-- Order state after -->
         ${(txn.orderPaidAfter != null || txn.orderDueAfter != null) ? `
           <div class="grid grid-cols-2 gap-3 mb-4">
             <div class="p-3 rounded-lg bg-slate-50">
@@ -834,35 +1794,19 @@
             </div>
           </div>
         ` : ""}
-
-        <!-- Note -->
         ${txn.note ? `
           <div class="p-3 rounded-lg bg-amber-50 border border-amber-100 mb-4">
             <p class="text-[11px] font-semibold uppercase tracking-wide text-amber-700 mb-1">Note</p>
             <p class="text-sm text-amber-900">${escapeHtml(txn.note)}</p>
           </div>
         ` : ""}
-
-        <!-- Reference -->
         ${txn.reference ? `
           <div class="p-3 rounded-lg bg-slate-50">
             <p class="text-[11px] font-semibold uppercase tracking-wide text-slate-500 mb-1">Reference</p>
             <p class="text-sm text-slate-700">${escapeHtml(txn.reference)}</p>
           </div>
         ` : ""}
-
-        <!-- Actions -->
-        <div class="mt-4 pt-4 border-t border-slate-100">
-          <a href="orders.html?q=${encodeURIComponent(txn.orderCode || "")}"
-             class="inline-flex items-center gap-2 text-sm font-medium text-brand-600 hover:text-brand-700">
-            <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-              <path stroke-linecap="round" stroke-linejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
-            </svg>
-            View order → ${escapeHtml(txn.orderCode || "")}
-          </a>
-        </div>
       `;
-
       txnModal.classList.add("is-open");
       txnModal.setAttribute("aria-hidden", "false");
       document.body.classList.add("no-scroll");
@@ -877,34 +1821,164 @@
     document.getElementById("txn-modal-close").addEventListener("click", closeTxnModal);
     document.getElementById("txn-modal-done").addEventListener("click", closeTxnModal);
     txnModal.addEventListener("click", (e) => { if (e.target === txnModal) closeTxnModal(); });
-    document.addEventListener("keydown", (e) => {
-      if (e.key === "Escape" && txnModal.classList.contains("is-open")) closeTxnModal();
-    });
-
-    /* ─── DELEGATED CLICK — view details ──────────────── */
-    document.addEventListener("click", (e) => {
-      const btn = e.target.closest(".txn-view-btn");
-      if (!btn) return;
-      const txn = state.items.find((t) => t.id === btn.dataset.id);
-      if (txn) openTxnModal(txn);
-    });
 
     /* ════════════════════════════════════════════════════
-       FILTERS
+       ORDER DETAIL MODAL (for ledger view)
        ════════════════════════════════════════════════════ */
+    const orderViewModal = document.getElementById("order-view-modal");
+    const orderViewTitle = document.getElementById("order-view-title");
+    const orderViewSub = document.getElementById("order-view-sub");
+    const orderViewBody = document.getElementById("order-view-body");
+
+    function openOrderViewModal(order) {
+      orderViewTitle.textContent = order.orderCode || order.id.slice(0, 8);
+      orderViewSub.textContent = order.shopName || "";
+
+      const items = order.items || [];
+      const itemRows = items.map((it) => `
+        <tr>
+          <td class="px-3 py-2 text-sm text-slate-800">${escapeHtml(it.name || "—")}</td>
+          <td class="px-3 py-2 text-sm text-center text-slate-600">${it.quantity || 0}</td>
+          <td class="px-3 py-2 text-sm text-right text-slate-600">${formatCurrency(it.price || 0)}</td>
+          <td class="px-3 py-2 text-sm text-right font-medium text-slate-900">${formatCurrency(it.total || 0)}</td>
+        </tr>
+      `).join("");
+
+      orderViewBody.innerHTML = `
+        <div class="flex items-center flex-wrap gap-2 mb-4">
+          ${statusBadge(order.status || "Pending")}
+          ${paymentBadge(order.payment?.status || "Unpaid")}
+        </div>
+
+        <div class="bg-slate-50 rounded-lg p-3 mb-4">
+          <p class="text-[11px] font-semibold uppercase tracking-wide text-slate-500 mb-1.5">Customer</p>
+          <p class="text-sm font-medium text-slate-900">${escapeHtml(order.customer?.name || "—")}</p>
+          <p class="text-xs text-slate-600">${escapeHtml(order.customer?.phone || "")}</p>
+          <p class="text-xs text-slate-600 mt-1">${escapeHtml(order.customer?.address || "")}</p>
+        </div>
+
+        <p class="text-[11px] font-semibold uppercase tracking-wide text-slate-500 mb-2">Products (${items.length})</p>
+        <div class="overflow-x-auto mb-4">
+          <table class="w-full">
+            <thead>
+              <tr class="border-b border-slate-200 bg-slate-50">
+                <th class="text-left text-[10px] font-semibold uppercase tracking-wider text-slate-500 px-3 py-2">Product</th>
+                <th class="text-center text-[10px] font-semibold uppercase tracking-wider text-slate-500 px-3 py-2">Qty</th>
+                <th class="text-right text-[10px] font-semibold uppercase tracking-wider text-slate-500 px-3 py-2">Price</th>
+                <th class="text-right text-[10px] font-semibold uppercase tracking-wider text-slate-500 px-3 py-2">Total</th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-slate-100">
+              ${itemRows || `<tr><td colspan="4" class="text-center py-4 text-xs text-slate-500">No items</td></tr>`}
+            </tbody>
+          </table>
+        </div>
+
+        <div class="bg-slate-50 rounded-lg p-3 space-y-1.5 text-sm">
+          <div class="flex justify-between">
+            <span class="text-slate-600">Subtotal</span>
+            <span class="text-slate-900 font-medium">${formatCurrency(order.subtotal || 0)}</span>
+          </div>
+          <div class="flex justify-between">
+            <span class="text-slate-600">Discount</span>
+            <span class="text-slate-900">-${formatCurrency(order.discount || 0)}</span>
+          </div>
+          <div class="flex justify-between">
+            <span class="text-slate-600">Delivery</span>
+            <span class="text-slate-900">+${formatCurrency(order.deliveryCharge || 0)}</span>
+          </div>
+          <div class="flex justify-between pt-2 border-t border-slate-200">
+            <span class="text-slate-700 font-semibold">Grand Total</span>
+            <span class="text-brand-700 font-bold">${formatCurrency(order.grandTotal || 0)}</span>
+          </div>
+          <div class="flex justify-between">
+            <span class="text-slate-600">Paid</span>
+            <span class="text-green-600 font-medium">${formatCurrency(order.payment?.paid || 0)}</span>
+          </div>
+          <div class="flex justify-between">
+            <span class="text-slate-600">Due</span>
+            <span class="text-red-600 font-semibold">${formatCurrency(order.payment?.due || 0)}</span>
+          </div>
+        </div>
+      `;
+
+      orderViewModal.classList.add("is-open");
+      orderViewModal.setAttribute("aria-hidden", "false");
+      document.body.classList.add("no-scroll");
+    }
+
+    function closeOrderViewModal() {
+      orderViewModal.classList.remove("is-open");
+      orderViewModal.setAttribute("aria-hidden", "true");
+      document.body.classList.remove("no-scroll");
+    }
+
+    document.getElementById("order-view-close").addEventListener("click", closeOrderViewModal);
+    document.getElementById("order-view-done").addEventListener("click", closeOrderViewModal);
+    orderViewModal.addEventListener("click", (e) => { if (e.target === orderViewModal) closeOrderViewModal(); });
+
+    /* ─── DELEGATED CLICKS ────────────────────────────── */
+    document.addEventListener("click", (e) => {
+      const payBtn = e.target.closest(".pay-btn");
+      if (payBtn) { openPayModal(payBtn.dataset.id); return; }
+
+      const txnBtn = e.target.closest(".txn-view-btn");
+      if (txnBtn) {
+        const txn = state.items.find((t) => t.id === txnBtn.dataset.id);
+        if (txn) openTxnModal(txn);
+        return;
+      }
+
+      const ledgerOrderBtn = e.target.closest(".ledger-order-view-btn");
+      if (ledgerOrderBtn) {
+        const order = state.ledgerOrders.find((o) => o.id === ledgerOrderBtn.dataset.orderId);
+        if (order) openOrderViewModal(order);
+        return;
+      }
+
+      const ledgerTxnBtn = e.target.closest(".ledger-txn-view-btn");
+      if (ledgerTxnBtn) {
+        const txn = state.ledgerTxns.find((t) => t.id === ledgerTxnBtn.dataset.txnId);
+        if (txn) openTxnModal(txn);
+        return;
+      }
+    });
+
+    /* ─── ESC KEY ─────────────────────────────────────── */
+    document.addEventListener("keydown", (e) => {
+      if (e.key === "Escape") {
+        if (txnModal.classList.contains("is-open")) closeTxnModal();
+        if (payModal.classList.contains("is-open")) closePayModal();
+        if (orderViewModal.classList.contains("is-open")) closeOrderViewModal();
+      }
+    });
+
+    /* ─── FILTERS ─────────────────────────────────────── */
     searchInput.addEventListener("input", debounce(() => {
       state.search = searchInput.value.trim();
-      render();
+      if (state.tab === "dues") renderDues();
+      else if (state.tab === "txns") render();
     }, 200));
 
     methodFilter.addEventListener("change", () => {
       state.methodFilter = methodFilter.value;
-      loadPayments({ reset: true });
+      if (state.tab === "txns") loadPayments({ reset: true });
     });
 
     dateFilter.addEventListener("change", () => {
       state.dateFilter = dateFilter.value;
-      loadPayments({ reset: true });
+      if (state.tab === "dues") renderDues();
+      else if (state.tab === "txns") loadPayments({ reset: true });
+    });
+
+    duesLoadBtn?.addEventListener("click", () => {
+      const label = duesLoadBtn.querySelector(".btn-label");
+      duesLoadBtn.disabled = true;
+      label.textContent = "Loading…";
+      loadDueOrders().finally(() => {
+        duesLoadBtn.disabled = false;
+        label.textContent = "Load more";
+      });
     });
 
     loadMoreBtn.addEventListener("click", () => {
@@ -918,14 +1992,21 @@
     });
 
     refreshBtn.addEventListener("click", () => {
+      cacheClear("q:orders");
       cacheClear("q:transactions");
-      loadPayments({ reset: true });
+      if (state.tab === "dues") loadDueOrders({ reset: true });
+      else if (state.tab === "txns") loadPayments({ reset: true });
+      else loadCustomerOptions();
       toast.info("Refreshed");
     });
 
     /* ─── BOOTSTRAP ───────────────────────────────────── */
     (async function init() {
-      await loadPayments({ reset: true });
+      await Promise.all([
+        loadDueOrders({ reset: true }),
+        loadPayments({ reset: true }),
+      ]);
+      switchTab("dues");
     })();
 
     function capitalize(s) { return s ? s.charAt(0).toUpperCase() + s.slice(1) : ""; }
